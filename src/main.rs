@@ -1,36 +1,49 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
+use parser::Directive;
+
+pub mod codegen;
 pub mod parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    scan_mods(Path::new("mods"))?;
+    let path = Path::new("fake-game");
+    scan_mods(path.into())?;
 
     Ok(())
 }
 
-fn scan_mods(folder: &'static Path) -> Result<(), Box<dyn Error>> {
-    let mods = std::fs::read_dir(folder)?;
+fn scan_mods(game_root: PathBuf) -> Result<(), Box<dyn Error>> {
+    let mods_folder = game_root.join("mods");
+    let mods = std::fs::read_dir(mods_folder)?;
 
     for module in mods {
         let module = module?;
 
-        scan_mod(&module.path())?;
+        let directives = scan_mod(&module.path())?;
+
+        for directive in directives {
+            directive.emit_code(&game_root)?;
+        }
     }
 
     Ok(())
 }
 
-fn scan_mod(module: &PathBuf) -> Result<(), Box<dyn Error>> {
+fn scan_mod(module: &PathBuf) -> Result<Vec<Directive>, Box<dyn Error>> {
     println!("scanning: {module:?}");
 
-    let files = dbg!(read_mod_directive_files(module)?);
+    let mut output = Vec::new();
+
+    let files = read_mod_directive_files(module)?;
     for content in files {
-        let directives = parse_directive_file(content)?;
+        let mut directives = parse_directive_file(content)?;
         println!("{directives:#?}");
+
+        output.append(&mut directives);
     }
 
-    Ok(())
+    Ok(output)
 }
 
 fn read_mod_directive_files(module: &PathBuf) -> Result<Vec<String>, Box<dyn Error>> {

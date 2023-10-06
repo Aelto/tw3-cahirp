@@ -1,10 +1,11 @@
+mod directives;
+pub use directives::*;
+
 mod directive;
 pub use directive::Directive;
 
-mod directive_type;
-pub use directive_type::DirectiveType;
-
 mod parameters;
+pub use parameters::Parameter;
 pub use parameters::Parameters;
 
 pub mod prelude {

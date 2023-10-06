@@ -1,9 +1,11 @@
-use crate::parser::prelude::*;
+use crate::{codegen::CodeEmitter, parser::prelude::*};
+
+use super::{InsertDirective, ReplaceDirective};
 
 #[derive(Debug)]
 pub enum DirectiveType {
-    Insert(Parameters),
-    Replace(Parameters),
+    Insert(InsertDirective),
+    Replace(ReplaceDirective),
 }
 
 impl DirectiveType {
@@ -15,13 +17,20 @@ impl DirectiveType {
         let (i, _) = tag("insert")(i)?;
         let (i, params) = delimited(char('('), Parameters::parse, char(')'))(i)?;
 
-        Ok((i, Self::Insert(params)))
+        Ok((i, Self::Insert(params.into())))
     }
 
     fn parse_replace(i: &str) -> IResult<&str, Self> {
         let (i, _) = tag("replace")(i)?;
         let (i, params) = delimited(char('('), Parameters::parse, char(')'))(i)?;
 
-        Ok((i, Self::Insert(params)))
+        Ok((i, Self::Replace(params.into())))
+    }
+
+    pub fn parameters(&self) -> &Parameters {
+        match self {
+            DirectiveType::Insert(i) => i.parameters(),
+            DirectiveType::Replace(r) => r.parameters(),
+        }
     }
 }
