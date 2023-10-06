@@ -31,18 +31,18 @@ repairValue = max;
 ```
 
 
-
-A mod can be composed of as many recipes as needed. In practice a recipe is a text
+- A mod can be composed of as many recipes as needed. In practice a recipe is a text
 file written in [`modExample/cahirp`](/fake-game/mods/modExample/) (where `modExample`
-is the arbitrary name given to the example mod). Each recipe contains one or more
-directives that will be executed by the pre-processor in order to emit code in a `mod00000_Cahirp`
+is the arbitrary name given to the example mod).
+- Each recipe contains one or more directives that will be executed by the pre-processor in order to emit code in a `mod00000_Cahirp`
 mod.
+- A directive is a series of pattern to look in file(s), and code to emit once all patterns
+were found. The pre-processor goes from top to bottom, from pattern to pattern until
+all the list is exhausted where it finally writes the code.
 
 The cahirp mod is like the MergedFiles mod, a combination of multiple mods the
-game will load before any other mod (MergedFiles included).
-
-While building the cahirpmod and while generating code, the pre-processor can use
-the code from either:
+game will load before any other mod (MergedFiles included). While building the
+cahirp mod and while generating code, the pre-processor can use the code from either:
 - the existing file in `mod00000_Cahirp`
 - the existing file in `mod0000_MergedFiles`
 - the existing file in `content0/scripts`
