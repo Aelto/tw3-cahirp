@@ -73,25 +73,25 @@ impl Directive {
     let content0 = game_root.join("content").join("content0").join("scripts");
 
     params.files()
-            .filter_map(move |file| {
-                let filep = Path::new(file);
-                let p = cahirp_merge.join(filep);
-                if p.exists() {
-                    return Some((p, filep.into()));
-                }
+    .filter_map(move |file| {
+        let filep = Path::new(file);
+        let p = cahirp_merge.join(filep);
+        if p.exists() {
+            return Some((p, filep.into()));
+        }
 
-                let p = normal_merge.join(filep);
-                if p.exists() {
-                    return Some((p, filep.into()));
-                }
+        let p = normal_merge.join(filep);
+        if p.exists() {
+            return Some((p, filep.into()));
+        }
 
-                let p = content0.join(filep);
-                if p.exists() {
-                    return Some((p, filep.into()));
-                }
+        let p = content0.join(filep);
+        if p.exists() {
+            return Some((p, filep.into()));
+        }
 
-                println!("Could not find {file} in neither Cahirp's merged files, Normal merged files nor content0... Skipping.");
-                None
-            })
+        println!("Could not find {file} in neither Cahirp's merged files, Normal merged files nor content0... Skipping.");
+        None
+    })
   }
 }
