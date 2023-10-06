@@ -1,9 +1,6 @@
 mod directives;
 pub use directives::*;
 
-mod directive;
-pub use directive::Directive;
-
 mod parameters;
 pub use parameters::Parameter;
 pub use parameters::Parameters;
