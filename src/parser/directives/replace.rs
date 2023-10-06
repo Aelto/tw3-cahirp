@@ -4,13 +4,13 @@ use crate::{codegen::CodeEmitter, parser::Parameters};
 pub struct ReplaceDirective(Parameters);
 
 impl From<Parameters> for ReplaceDirective {
-    fn from(value: Parameters) -> Self {
-        Self(value)
-    }
+  fn from(value: Parameters) -> Self {
+    Self(value)
+  }
 }
 
 impl CodeEmitter for ReplaceDirective {
-    fn parameters(&self) -> &Parameters {
-        &self.0
-    }
+  fn parameters(&self) -> &Parameters {
+    &self.0
+  }
 }

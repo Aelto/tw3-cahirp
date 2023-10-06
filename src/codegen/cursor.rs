@@ -4,90 +4,90 @@ use crate::parser::{Parameter, Parameters};
 
 #[derive(Debug)]
 pub struct CodeCursor {
-    pub pos: CursorPosition,
+  pub pos: CursorPosition
 }
 
 #[derive(Debug)]
 pub struct CursorPosition {
-    // line: usize,
-    pub idx: usize,
-    pub selection_len: usize,
+  // line: usize,
+  pub idx: usize,
+  pub selection_len: usize,
 
-    _prev_line_len: usize,
+  _prev_line_len: usize
 }
 
 impl CursorPosition {
-    fn new() -> Self {
-        CursorPosition {
-            // line: 0,
-            idx: 0,
-            selection_len: 0,
+  fn new() -> Self {
+    CursorPosition {
+      // line: 0,
+      idx: 0,
+      selection_len: 0,
 
-            _prev_line_len: 0,
-        }
+      _prev_line_len: 0
+    }
+  }
+
+  fn next_line<'a>(&'a mut self, lines: &'a mut std::iter::Peekable<Lines>) -> Option<&'a str> {
+    self.idx += self._prev_line_len;
+    // self.line += 1;
+
+    let line = lines.next();
+    if let Some(line) = line {
+      // +1 for the \n
+      self._prev_line_len = line.len() + 1;
     }
 
-    fn next_line<'a>(&'a mut self, lines: &'a mut std::iter::Peekable<Lines>) -> Option<&'a str> {
-        self.idx += self._prev_line_len;
-        // self.line += 1;
-
-        let line = lines.next();
-        if let Some(line) = line {
-            // +1 for the \n
-            self._prev_line_len = line.len() + 1;
-        }
-
-        line
-    }
+    line
+  }
 }
 
 impl CodeCursor {
-    pub fn from_parameters(params: &Parameters, file: &str) -> Self {
-        let mut pos = CursorPosition::new();
+  pub fn from_parameters(params: &Parameters, file: &str) -> Self {
+    let mut pos = CursorPosition::new();
 
-        let mut lines = file.lines().peekable();
+    let mut lines = file.lines().peekable();
 
-        for param in params.all() {
-            match param {
-                Parameter::File(_) => continue,
-                Parameter::Note(_) => continue,
-                Parameter::At(pat) => {
-                    while let Some(line) = pos.next_line(&mut lines) {
-                        if line.contains(pat) {
-                            break;
-                        }
-                    }
-                }
-                Parameter::Below(pat) => {
-                    while let Some(line) = pos.next_line(&mut lines) {
-                        if line.contains(pat) {
-                            break;
-                        }
-                    }
-                    pos.next_line(&mut lines);
-                }
-                Parameter::Above(pat) => {
-                    while let Some(_) = pos.next_line(&mut lines) {
-                        if let Some(peek) = lines.peek() {
-                            if peek.contains(pat) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                Parameter::Select(pat) => {
-                    let current_slice = &file[pos.idx..];
-                    if let Some(pat_idx) = current_slice.find(pat) {
-                        let pat_len = pat.len();
-
-                        lines = current_slice[pat_idx..pat_idx + pat_len].lines().peekable();
-                        pos.idx += pat_idx;
-                        pos.selection_len = pat_len;
-                    }
-                }
+    for param in params.all() {
+      match param {
+        Parameter::File(_) => continue,
+        Parameter::Note(_) => continue,
+        Parameter::At(pat) => {
+          while let Some(line) = pos.next_line(&mut lines) {
+            if line.contains(pat) {
+              break;
             }
+          }
         }
+        Parameter::Below(pat) => {
+          while let Some(line) = pos.next_line(&mut lines) {
+            if line.contains(pat) {
+              break;
+            }
+          }
+          pos.next_line(&mut lines);
+        }
+        Parameter::Above(pat) => {
+          while let Some(_) = pos.next_line(&mut lines) {
+            if let Some(peek) = lines.peek() {
+              if peek.contains(pat) {
+                break;
+              }
+            }
+          }
+        }
+        Parameter::Select(pat) => {
+          let current_slice = &file[pos.idx..];
+          if let Some(pat_idx) = current_slice.find(pat) {
+            let pat_len = pat.len();
 
-        Self { pos }
+            lines = current_slice[pat_idx..pat_idx + pat_len].lines().peekable();
+            pos.idx += pat_idx;
+            pos.selection_len = pat_len;
+          }
+        }
+      }
     }
+
+    Self { pos }
+  }
 }
