@@ -17,7 +17,7 @@ pub trait CodeEmitter {
         // TODO: it could be interesting to match the indentation of the previous
         // lines on the code we insert here:
         output.push_str(code);
-        output.push_str(right);
+        output.push_str(&right[cursor.pos.selection_len..]);
 
         Ok(output)
     }

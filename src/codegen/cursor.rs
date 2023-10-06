@@ -9,8 +9,9 @@ pub struct CodeCursor {
 
 #[derive(Debug)]
 pub struct CursorPosition {
-    line: usize,
+    // line: usize,
     pub idx: usize,
+    pub selection_len: usize,
 
     _prev_line_len: usize,
 }
@@ -18,8 +19,9 @@ pub struct CursorPosition {
 impl CursorPosition {
     fn new() -> Self {
         CursorPosition {
-            line: 0,
+            // line: 0,
             idx: 0,
+            selection_len: 0,
 
             _prev_line_len: 0,
         }
@@ -27,7 +29,7 @@ impl CursorPosition {
 
     fn next_line<'a>(&'a mut self, lines: &'a mut std::iter::Peekable<Lines>) -> Option<&'a str> {
         self.idx += self._prev_line_len;
-        self.line += 1;
+        // self.line += 1;
 
         let line = lines.next();
         if let Some(line) = line {
@@ -71,6 +73,16 @@ impl CodeCursor {
                                 break;
                             }
                         }
+                    }
+                }
+                Parameter::Select(pat) => {
+                    let current_slice = &file[pos.idx..];
+                    if let Some(pat_idx) = current_slice.find(pat) {
+                        let pat_len = pat.len();
+
+                        lines = current_slice[pat_idx..pat_idx + pat_len].lines().peekable();
+                        pos.idx += pat_idx;
+                        pos.selection_len = pat_len;
                     }
                 }
             }

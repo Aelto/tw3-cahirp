@@ -1,4 +1,7 @@
-use std::{error::Error, path::PathBuf};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use crate::codegen::CodeEmitter;
 pub use crate::parser::prelude::*;
@@ -21,24 +24,34 @@ impl Directive {
     }
 
     pub fn emit_code(&self, game_root: &PathBuf) -> Result<(), Box<dyn Error>> {
+        for note in self.variant.parameters().notes() {
+            println!("- {note}");
+        }
+
         for (file, relative_path) in self.affected_files(&game_root) {
+            println!("  - on: {relative_path:?}");
+
             let content = std::fs::read_to_string(file)?;
             let output = match &self.variant {
                 DirectiveType::Insert(i) => i.emit(content, &self.code)?,
                 DirectiveType::Replace(r) => r.emit(content, &self.code)?,
             };
 
-            let cahirp_merge = self.cahirp_merge_path(game_root);
+            let cahirp_merge = Self::cahirp_merge_path(game_root);
             let output_path = cahirp_merge.join(relative_path);
 
-            std::fs::write(output_path, output)?;
+            if let Some(parent) = output_path.parent() {
+                std::fs::create_dir_all(parent)?;
+                std::fs::write(output_path, output)?;
+            }
         }
 
         Ok(())
     }
 
-    fn cahirp_merge_path(&self, game_root: &PathBuf) -> PathBuf {
+    pub fn cahirp_merge_path(game_root: &PathBuf) -> PathBuf {
         game_root
+            .join("mods")
             .join("mod00000_Cahirp")
             .join("content")
             .join("scripts")
@@ -47,11 +60,12 @@ impl Directive {
     fn affected_files<'a>(
         &'a self,
         game_root: &PathBuf,
-    ) -> impl Iterator<Item = (PathBuf, &'a str)> + 'a {
+    ) -> impl Iterator<Item = (PathBuf, PathBuf)> + 'a {
         let params = self.variant.parameters();
 
-        let cahirp_merge = self.cahirp_merge_path(game_root);
+        let cahirp_merge = Self::cahirp_merge_path(game_root);
         let normal_merge = game_root
+            .join("mods")
             .join("mod0000_MergedFiles")
             .join("content")
             .join("scripts");
@@ -59,19 +73,20 @@ impl Directive {
 
         params.files()
             .filter_map(move |file| {
-                let p = cahirp_merge.join(file);
-                if cahirp_merge.join(file).exists() {
-                    return Some((p, file));
+                let filep = Path::new(file);
+                let p = cahirp_merge.join(filep);
+                if p.exists() {
+                    return Some((p, filep.into()));
                 }
 
-                let p = normal_merge.join(file);
+                let p = normal_merge.join(filep);
                 if p.exists() {
-                    return Some((p, file));
+                    return Some((p, filep.into()));
                 }
 
-                let p = content0.join(file);
+                let p = content0.join(filep);
                 if p.exists() {
-                    return Some((p,file));
+                    return Some((p, filep.into()));
                 }
 
                 println!("Could not find {file} in neither Cahirp's merged files, Normal merged files nor content0... Skipping.");

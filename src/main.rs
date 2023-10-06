@@ -7,13 +7,19 @@ pub mod codegen;
 pub mod parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let path = Path::new("fake-game");
+    let path = Path::new("./fake-game");
     scan_mods(path.into())?;
 
     Ok(())
 }
 
 fn scan_mods(game_root: PathBuf) -> Result<(), Box<dyn Error>> {
+    let cahirp_merge = Directive::cahirp_merge_path(&game_root);
+    if cahirp_merge.exists() {
+        println!("clearing existing cahirp merged files");
+        std::fs::remove_dir_all(cahirp_merge)?;
+    }
+
     let mods_folder = game_root.join("mods");
     let mods = std::fs::read_dir(mods_folder)?;
 
@@ -31,14 +37,11 @@ fn scan_mods(game_root: PathBuf) -> Result<(), Box<dyn Error>> {
 }
 
 fn scan_mod(module: &PathBuf) -> Result<Vec<Directive>, Box<dyn Error>> {
-    println!("scanning: {module:?}");
-
     let mut output = Vec::new();
 
     let files = read_mod_directive_files(module)?;
     for content in files {
         let mut directives = parse_directive_file(content)?;
-        println!("{directives:#?}");
 
         output.append(&mut directives);
     }

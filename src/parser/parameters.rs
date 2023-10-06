@@ -7,8 +7,6 @@ pub struct Parameters(Vec<Parameter>);
 
 impl Parameters {
     pub fn parse(i: &str) -> IResult<&str, Self> {
-        println!("Parameters::parse({i})");
-
         let (i, _) = trim(i)?;
         let (i, params) = many0(Parameter::parse)(i)?;
         let (i, _) = trim(i)?;
@@ -167,7 +165,7 @@ impl Parameter {
         let (i, _) = char('(')(i)?;
         let (i, pattern) = Self::parse_til_end_of_param(i)?;
 
-        Ok((i, pattern.to_owned()))
+        Ok((i, pattern.trim_matches('\"').to_owned()))
     }
 
     fn parse_til_end_of_param(i: &str) -> IResult<&str, &str> {
