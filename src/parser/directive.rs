@@ -6,25 +6,30 @@ use std::{
 pub use crate::parser::prelude::*;
 use crate::{codegen::CodeEmitter, encoding::read_file};
 
-use self::directives::DirectiveType;
-
 #[derive(Debug)]
 pub struct Directive {
-  pub variant: DirectiveType,
+  pub insert: InsertDirective,
   pub code: String
 }
 
 impl Directive {
   pub fn parse(i: &str) -> IResult<&str, Self> {
     let (i, _) = tag("@")(i)?;
-    let (i, variant) = DirectiveType::parse(i)?;
+    let (i, insert) = Self::parse_insert(i)?;
     let code = i.trim().to_owned();
 
-    Ok(("", Self { variant, code }))
+    Ok(("", Self { insert, code }))
+  }
+
+  fn parse_insert(i: &str) -> IResult<&str, InsertDirective> {
+    let (i, _) = tag("insert")(i)?;
+    let (i, params) = delimited(char('('), Parameters::parse, char(')'))(i)?;
+
+    Ok((i, params.into()))
   }
 
   pub fn emit_code(&self, game_root: &PathBuf) -> Result<(), Box<dyn Error>> {
-    for note in self.variant.parameters().notes() {
+    for note in self.insert.parameters().notes() {
       println!("- {note}");
     }
 
@@ -32,10 +37,7 @@ impl Directive {
       println!("  - on: {relative_path:?}");
 
       let content = read_file(&file)?;
-      let output = match &self.variant {
-        DirectiveType::Insert(i) => i.emit(content, &self.code)?,
-        DirectiveType::Replace(r) => r.emit(content, &self.code)?
-      };
+      let output = self.insert.emit(content, &self.code)?;
 
       let cahirp_merge = Self::cahirp_merge_path(game_root);
       let output_path = cahirp_merge.join(relative_path);
@@ -60,7 +62,7 @@ impl Directive {
   fn affected_files<'a>(
     &'a self, game_root: &PathBuf
   ) -> impl Iterator<Item = (PathBuf, PathBuf)> + 'a {
-    let params = self.variant.parameters();
+    let params = self.insert.parameters();
 
     let cahirp_merge = Self::cahirp_merge_path(game_root);
     let normal_merge = game_root
