@@ -33,16 +33,26 @@ repairValue = max;
 
 
 A mod can be composed of as many recipes as needed. In practice a recipe is a text
-file written in [`modExample/cahirp`](/fake-game/mods/modExample/) where `modExample`
-is the arbitrary name given to the example mod. Each recipe contains one more
-directives that will be executed by the pre-processor to emit code in either:
+file written in [`modExample/cahirp`](/fake-game/mods/modExample/) (where `modExample`
+is the arbitrary name given to the example mod). Each recipe contains one or more
+directives that will be executed by the pre-processor in order to emit code in a `mod00000_Cahirp`
+mod.
+
+The cahirp mod is like the MergedFiles mod, a combination of multiple mods the
+game will load before any other mod (MergedFiles included).
+
+While building the cahirpmod and while generating code, the pre-processor can use
+the code from either:
 - the existing file in `mod00000_Cahirp`
 - the existing file in `mod0000_MergedFiles`
 - the existing file in `content0/scripts`
-in this order of importance.
+in this order of importance. If a recipe requires a file that is not found in `MergedFiles`
+then it will use the current `content0` scripts as the base. But then for any other recipe
+needing this file they will instead use the previously extracted one in order to
+accumulate the generated code.
 
-The pre-processor and code generation is idempotent as first action is the deletion
-of any existing `mod00000_Cahirp` folder to ensure that runs of the pre-processor,
+The pre-processor and code generation is idempotent as the first action is the deletion
+of any existing `mod00000_Cahirp` folder to ensure that successive runs,
 if given similar inputs (content0 & MergedFiles & recipes), yields the exact same
 `mod00000_Cahirp` folder.
 
