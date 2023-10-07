@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use crate::parser::Parameters;
 
 use super::CodeCursor;
@@ -7,7 +5,7 @@ use super::CodeCursor;
 pub trait CodeEmitter {
   fn parameters(&self) -> &Parameters;
 
-  fn emit(&self, mut file: String, code: &str) -> Result<String, Box<dyn Error>> {
+  fn emit(&self, mut file: String, code: &str) -> String {
     let cursor = CodeCursor::from_parameters(self.parameters(), &file);
 
     let (left, right) = file.split_at_mut(cursor.pos.idx);
@@ -17,7 +15,7 @@ pub trait CodeEmitter {
     output.push_str(&match_line_indentation(code, left));
     output.push_str(&right[cursor.pos.selection_len..]);
 
-    Ok(output)
+    output
   }
 }
 
