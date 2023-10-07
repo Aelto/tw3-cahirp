@@ -31,6 +31,9 @@ impl Directive {
     Ok((i, params.into()))
   }
 
+  /// A synchronous version of  what [emit_file_code] does but with all
+  /// the affected files of the directive
+  #[deprecated]
   pub fn emit_code(&self, game_root: &PathBuf) -> Result<(), Box<dyn Error>> {
     for note in self.insert.parameters().notes() {
       println!("- {note}");
@@ -40,7 +43,7 @@ impl Directive {
       println!("  - on: {relative_path:?}");
 
       let content = read_file(&file)?;
-      let output = self.insert.emit(content, &self.code)?;
+      let output = self.insert.emit(content, &self.code);
 
       let cahirp_merge = Self::cahirp_merge_path(game_root);
       let output_path = cahirp_merge.join(relative_path);
@@ -54,6 +57,17 @@ impl Directive {
     Ok(())
   }
 
+  pub fn emit_file_code(&self, cahirp_file: &PathBuf) -> std::io::Result<()> {
+    let content = read_file(&cahirp_file)?;
+    let output = self.insert.emit(content, &self.code);
+
+    // assumption here: the FilePool takes care of making sure the path we're
+    // working on already exists
+    std::fs::write(cahirp_file, output)?;
+
+    Ok(())
+  }
+
   pub fn cahirp_merge_path(game_root: &PathBuf) -> PathBuf {
     game_root
       .join("mods")
@@ -62,7 +76,7 @@ impl Directive {
       .join("scripts")
   }
 
-  fn affected_files<'a>(
+  pub fn affected_files<'a>(
     &'a self, game_root: &PathBuf
   ) -> impl Iterator<Item = (PathBuf, PathBuf)> + 'a {
     let params = self.insert.parameters();

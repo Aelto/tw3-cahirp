@@ -1,8 +1,14 @@
+#![feature(map_try_insert)]
+
 use std::error::Error;
+use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
 use encoding::read_file;
 use parser::Directive;
+use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+
+use crate::codegen::FilePool;
 
 pub mod codegen;
 pub mod encoding;
@@ -22,33 +28,59 @@ fn scan_mods(game_root: PathBuf) -> Result<(), Box<dyn Error>> {
     std::fs::remove_dir_all(cahirp_merge)?;
   }
 
-  let mods_folder = game_root.join("mods");
-  let mods = std::fs::read_dir(mods_folder)?;
+  use rayon::prelude::*;
+  let directives = list_mods(&game_root)
+    .into_par_iter()
+    .flat_map(|module| parse_mod_recipes(module.path()));
 
-  for module in mods {
-    let module = module?;
+  let directives: Vec<Directive> = directives.collect();
+  let file_pool = FilePool::new(directives, &game_root)?;
 
-    let directives = scan_mod(&module.path())?;
-
-    for directive in directives {
-      directive.emit_code(&game_root)?;
-    }
-  }
+  file_pool.emit(&game_root)?;
 
   Ok(())
 }
 
-fn scan_mod(module: &PathBuf) -> Result<Vec<Directive>, Box<dyn Error>> {
-  let mut output = Vec::new();
+/// List the mods found in the mod directory while handling any eventual error
+/// in the process, yielding only the Ok results.
+fn list_mods(game_root: &PathBuf) -> impl rayon::iter::ParallelIterator<Item = DirEntry> {
+  let mods_folder = game_root.join("mods");
+  let Ok(mods) = std::fs::read_dir(mods_folder) else {
+    panic!("Could not read mods folder");
+  };
 
-  let files = read_mod_directive_files(module)?;
-  for content in files {
-    let mut directives = parse_directive_file(content)?;
+  mods.par_bridge().filter_map(|entry| match entry {
+    Ok(e) => Some(e),
+    Err(e) => {
+      println!("error reading mod: {e}");
 
-    output.append(&mut directives);
-  }
+      None
+    }
+  })
+}
 
-  Ok(output)
+/// List the recipes for the given module, then parse them while also handling
+/// any eventual error during the process then return an iterator of the parsed
+/// directives from all recipes that were found.
+fn parse_mod_recipes<'a>(module: PathBuf) -> impl ParallelIterator<Item = Directive> + 'a {
+  let files = match read_mod_directive_files(&module) {
+    Ok(f) => f,
+    Err(e) => {
+      panic!("error reading recipes for {module:?}: {e}");
+    }
+  };
+
+  files
+    .into_par_iter()
+    .filter_map(move |recipe| match parse_directive_file(recipe) {
+      Ok(directives) => Some(directives),
+      Err(e) => {
+        println!("error parsing recipe for {module:?}: {e}");
+
+        None
+      }
+    })
+    .flat_map(|directives| directives)
 }
 
 fn read_mod_directive_files(module: &PathBuf) -> Result<Vec<String>, Box<dyn Error>> {
@@ -101,7 +133,7 @@ fn parse_directive_file(input: String) -> Result<Vec<parser::Directive>, Box<dyn
         output.push(directive);
       }
       Err(e) => {
-        println!("parse error: {e}");
+        println!("recipe syntax error: {e}");
       }
     }
 
