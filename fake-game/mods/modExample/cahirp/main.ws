@@ -20,4 +20,4 @@ RER_onItemAdded(this, data);
 )
 // modFullRepair - BEGIN
 repairValue = max;
-// modFullRepair - BEGIN
+// modFullRepair - END
