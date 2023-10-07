@@ -1,6 +1,6 @@
-use std::{error::Error, path::PathBuf};
+use std::path::PathBuf;
 
-pub fn read_file(path: &PathBuf) -> Result<String, Box<dyn Error>> {
+pub fn read_file(path: &PathBuf) -> std::io::Result<String> {
   let contents = std::fs::read_to_string(path)?;
 
   Ok(contents.replace("\r", ""))
