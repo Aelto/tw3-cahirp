@@ -5,7 +5,7 @@ use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
 use encoding::read_file;
-use parser::Directive;
+use parser::{Context, Directive};
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 use crate::codegen::FilePool;
@@ -117,6 +117,7 @@ fn parse_directive_file(input: String) -> Result<Vec<parser::Directive>, Box<dyn
   // - if it's the last one in the file then it starts from the @ up until EOF
   // - if it's not the last one then it starts from the @ up until the next @
   let mut slice = &input[..];
+  let mut context = Context::empty();
 
   loop {
     slice = slice.trim();
@@ -133,12 +134,14 @@ fn parse_directive_file(input: String) -> Result<Vec<parser::Directive>, Box<dyn
     };
     let directive_slice = slice[..=end].trim();
 
-    match parser::Directive::parse(directive_slice) {
-      Ok((_, directive)) => {
-        output.push(directive);
-      }
+    match context.parse_with_context(directive_slice) {
       Err(e) => {
         println!("recipe syntax error: {e}");
+      }
+      Ok(some_directive) => {
+        if let (_, Some(directive)) = some_directive {
+          output.push(dbg!(directive));
+        }
       }
     }
 

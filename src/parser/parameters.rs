@@ -2,16 +2,24 @@ use std::ops::Deref;
 
 pub use crate::parser::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parameters(Vec<Parameter>);
 
 impl Parameters {
+  pub fn empty() -> Self {
+    Self(Vec::new())
+  }
+
   pub fn parse(i: &str) -> IResult<&str, Self> {
     let (i, _) = trim(i)?;
     let (i, params) = many0(Parameter::parse)(i)?;
     let (i, _) = trim(i)?;
 
     Ok((i, Self(params)))
+  }
+
+  pub fn append(&mut self, mut other: Parameters) {
+    self.0.append(&mut other.0);
   }
 
   pub fn all<'a>(&'a self) -> impl Iterator<Item = &'a Parameter> {
@@ -54,7 +62,7 @@ impl Parameters {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Parameter {
   /// Specifies one or many files to work on:
   /// - if no File directive is found then all files in the `mods` directory.
@@ -111,7 +119,7 @@ pub enum Parameter {
 }
 
 impl Parameter {
-  fn parse(i: &str) -> IResult<&str, Self> {
+  pub fn parse(i: &str) -> IResult<&str, Self> {
     let (i, _) = trim(i)?;
     let (i, param) = alt((
       Self::parse_file,

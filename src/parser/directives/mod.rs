@@ -57,6 +57,11 @@ impl Directive {
     Ok(())
   }
 
+  pub fn with_context(mut self, parameters: Parameters) -> Self {
+    self.insert = self.insert.with_context(parameters);
+    self
+  }
+
   pub fn cahirp_merge_path(game_root: &PathBuf) -> PathBuf {
     game_root
       .join("mods")
