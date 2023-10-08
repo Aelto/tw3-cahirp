@@ -41,7 +41,7 @@ fn scan_mods(game_root: PathBuf) -> Result<(), Box<dyn Error>> {
   let directives: Vec<Directive> = directives.collect();
   let file_pool = FilePool::new(directives, &game_root)?;
 
-  file_pool.emit(&game_root)?;
+  file_pool.emit(&game_root)?.perist()?;
 
   Ok(())
 }

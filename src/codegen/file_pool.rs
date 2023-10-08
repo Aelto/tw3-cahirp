@@ -1,13 +1,21 @@
-use std::{collections::HashMap, error::Error, path::PathBuf, sync::Mutex};
+use std::{
+  cell::Cell,
+  collections::HashMap,
+  error::Error,
+  path::PathBuf,
+  sync::{Arc, Mutex}
+};
 
 use rayon::prelude::*;
 
-use crate::parser::Directive;
+use crate::{encoding::read_file, parser::Directive};
+
+use super::CodeEmitter;
 
 pub struct FilePool {
   directives: Vec<Directive>,
 
-  file_locks: HashMap<PathBuf, Mutex<()>>
+  file_locks: HashMap<PathBuf, Arc<Mutex<Cell<String>>>>
 }
 
 impl FilePool {
@@ -22,13 +30,15 @@ impl FilePool {
         let content_path = Self::cahirp_path(game_root, &file_suffix);
 
         if !locks.contains_key(&content_path) {
-          let parent = content_path
-            .parent()
-            .expect("invalid file path, no parent available");
-          std::fs::create_dir_all(parent)?;
+          // let parent = content_path
+          //   .parent()
+          //   .expect("invalid file path, no parent available");
+          // std::fs::create_dir_all(parent)?;
 
-          std::fs::copy(&file, &content_path)?;
-          locks.insert(content_path, Mutex::new(()));
+          // std::fs::copy(&file, &content_path)?;
+
+          let contents = read_file(&file)?;
+          locks.insert(content_path, Arc::new(Mutex::new(Cell::new(contents))));
         }
       }
     }
@@ -39,27 +49,43 @@ impl FilePool {
     })
   }
 
-  pub fn emit(self, game_root: &PathBuf) -> std::io::Result<()> {
-    self
-      .directives
-      .par_iter()
-      .flat_map(|directive| {
-        directive
-          .affected_files(game_root)
-          .par_bridge()
-          .map(|(_, file_suffix)| {
-            let mutex = self.file_lock(game_root, &file_suffix);
-            let _lock = mutex.lock().expect("mutex poisoning error");
+  pub fn emit(self, game_root: &PathBuf) -> std::io::Result<Self> {
+    self.directives.par_iter().for_each(|directive| {
+      for (_, file_suffix) in directive.affected_files(game_root) {
+        let arc = self.file_lock(game_root, &file_suffix);
+        let cell = arc.lock().expect("mutex poisoning error");
+        let contents = cell.take();
+        let new_contents = directive.insert.emit(contents, &directive.code);
 
-            let cahirp_file = Self::cahirp_path(game_root, &file_suffix);
-            if let Err(e) = directive.emit_file_code(&cahirp_file) {
-              return Err(e);
-            }
+        cell.set(new_contents);
+      }
+    });
 
-            Ok(())
-          })
+    Ok(self)
+  }
+
+  pub fn perist(self) -> std::io::Result<()> {
+    let results: Vec<std::io::Result<()>> = self
+      .file_locks
+      .into_par_iter()
+      .map(|(path, contents)| {
+        if let Some(parent) = path.parent() {
+          if let Err(_) = std::fs::create_dir_all(parent) {}
+        }
+
+        let contents = contents.lock().expect("mutex poisoning error").take();
+
+        std::fs::write(path, contents)
       })
-      .collect()
+      .collect();
+
+    for result in results {
+      if let Err(e) = result {
+        println!("error while writing output to disk: {e}");
+      }
+    }
+
+    Ok(())
   }
 
   /// Make a path to the file in the cahirp output merged files folder using
@@ -69,12 +95,14 @@ impl FilePool {
   }
 
   /// Get the file mutex for the given file suffix
-  pub fn file_lock(&self, game_root: &PathBuf, file_suffix: &PathBuf) -> &Mutex<()> {
+  pub fn file_lock(&self, game_root: &PathBuf, file_suffix: &PathBuf) -> Arc<Mutex<Cell<String>>> {
     let path = Self::cahirp_path(game_root, file_suffix);
 
-    self
-      .file_locks
-      .get(&path)
-      .expect("filelock on unknown file")
+    Arc::clone(
+      self
+        .file_locks
+        .get(&path)
+        .expect("filelock on unknown file")
+    )
   }
 }

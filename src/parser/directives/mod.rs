@@ -57,17 +57,6 @@ impl Directive {
     Ok(())
   }
 
-  pub fn emit_file_code(&self, cahirp_file: &PathBuf) -> std::io::Result<()> {
-    let content = read_file(&cahirp_file)?;
-    let output = self.insert.emit(content, &self.code);
-
-    // assumption here: the FilePool takes care of making sure the path we're
-    // working on already exists
-    std::fs::write(cahirp_file, output)?;
-
-    Ok(())
-  }
-
   pub fn cahirp_merge_path(game_root: &PathBuf) -> PathBuf {
     game_root
       .join("mods")
