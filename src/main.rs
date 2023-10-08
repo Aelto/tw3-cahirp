@@ -15,7 +15,12 @@ pub mod encoding;
 pub mod parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
-  let path = Path::new("./fake-game");
+  #[cfg(debug_assertions)]
+  let path = Path::new("fake-game");
+
+  #[cfg(not(debug_assertions))]
+  let path = Path::new(".");
+
   scan_mods(path.into())?;
 
   Ok(())
