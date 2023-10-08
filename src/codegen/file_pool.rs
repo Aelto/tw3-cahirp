@@ -12,13 +12,20 @@ use crate::{encoding::read_file, parser::Directive};
 
 use super::CodeEmitter;
 
+/// A thread-safe pool that holds the content of the files in memory and ensures
+/// only one thread has access to a given file at once. Allowing to throw any
+/// amount of threads at it so the work is spread without fearing data races.
 pub struct FilePool {
   directives: Vec<Directive>,
 
+  /// The file locks is what  ensure only a single thread has access to the
+  /// underlying Cell to mutate the content of the "in-memory file"
   file_locks: HashMap<PathBuf, Arc<Mutex<Cell<String>>>>
 }
 
 impl FilePool {
+  /// At creation the [FilePool] generates the exhaustive flat list of files that
+  /// directives will work on.
   pub fn new(directives: Vec<Directive>, game_root: &PathBuf) -> Result<Self, Box<dyn Error>> {
     let mut locks = HashMap::new();
 
@@ -30,13 +37,6 @@ impl FilePool {
         let content_path = Self::cahirp_path(game_root, &file_suffix);
 
         if !locks.contains_key(&content_path) {
-          // let parent = content_path
-          //   .parent()
-          //   .expect("invalid file path, no parent available");
-          // std::fs::create_dir_all(parent)?;
-
-          // std::fs::copy(&file, &content_path)?;
-
           let contents = read_file(&file)?;
           locks.insert(content_path, Arc::new(Mutex::new(Cell::new(contents))));
         }
@@ -49,6 +49,9 @@ impl FilePool {
     })
   }
 
+  /// Generate code and mutate the inner "in-memory" file locks with the results
+  ///
+  /// If persistence to disk is needed then refer to the [`persist()`] method
   pub fn emit(self, game_root: &PathBuf) -> std::io::Result<Self> {
     self.directives.par_iter().for_each(|directive| {
       for (_, file_suffix) in directive.affected_files(game_root) {
@@ -64,7 +67,8 @@ impl FilePool {
     Ok(self)
   }
 
-  pub fn perist(self) -> std::io::Result<()> {
+  /// Persist the content of the in-memory files to disk
+  pub fn persist(self) -> std::io::Result<()> {
     let results: Vec<std::io::Result<()>> = self
       .file_locks
       .into_par_iter()
