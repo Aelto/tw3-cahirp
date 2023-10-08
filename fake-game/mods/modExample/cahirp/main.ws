@@ -21,3 +21,26 @@ RER_onItemAdded(this, data);
 // modFullRepair - BEGIN
 repairValue = max;
 // modFullRepair - END
+
+@insert(
+  file("game/components/inventoryComponent.ws")
+  at(class CInventoryComponent)
+  at(function GetItemPrimaryStat)
+  select[[
+    if(attributeValue.valueBase != 0)
+		{
+			resultValue = attributeValue.valueBase;
+		}
+		if(attributeValue.valueMultiplicative != 0)
+		{								
+			resultValue = attributeValue.valueMultiplicative;
+		}
+		if(attributeValue.valueAdditive != 0)
+		{
+			resultValue = attributeValue.valueAdditive;
+		}
+  ]]
+)
+// modSomething - BEGIN
+attributeVal = attributeValue.valueAdditive
+// modSomething - END

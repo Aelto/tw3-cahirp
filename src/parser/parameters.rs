@@ -105,6 +105,8 @@ pub enum Parameter {
   /// code.
   Select(String),
 
+  MultilineSelect(String),
+
   Note(String)
 }
 
@@ -117,6 +119,7 @@ impl Parameter {
       Self::parse_above,
       Self::parse_below,
       Self::parse_select,
+      Self::parse_multiline_select,
       Self::parse_note
     ))(i)?;
     let (i, _) = trim(i)?;
@@ -152,6 +155,15 @@ impl Parameter {
     let (i, pattern) = Self::parse_parameter("select", i)?;
 
     Ok((i, Self::Select(pattern)))
+  }
+
+  fn parse_multiline_select(i: &str) -> IResult<&str, Self> {
+    let (i, _) = tag("select")(i)?;
+    let (i, _) = tag("[[")(i)?;
+    let (i, pattern) = take_until1("]]\n")(i)?;
+    let (i, _) = tag("]]\n")(i)?;
+
+    Ok((i, Self::MultilineSelect(pattern.to_owned())))
   }
 
   fn parse_note(i: &str) -> IResult<&str, Self> {

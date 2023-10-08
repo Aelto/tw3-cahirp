@@ -85,6 +85,40 @@ impl CodeCursor {
             pos.selection_len = pat_len;
           }
         }
+        Parameter::MultilineSelect(pat) => {
+          let pat = pat.trim();
+
+          'outer: while let Some(_) = pos.next_line(&mut lines) {
+            let slice = &file[pos.idx..];
+            let mut inner_lines = slice.lines();
+
+            // from here we search for a series of lines where each line from
+            // both the pattern and the file are identical
+
+            // we keep an internal counter since we can't rely on the pattern
+            // length because lines are trimmed, so instead the internal counter
+            // uses the file's lines length.
+            let mut internal_idx = pos.idx;
+            for patl in pat.lines() {
+              let filel = inner_lines.next();
+
+              let lines_match = filel
+                .map(|filel| filel.trim() == patl.trim())
+                .unwrap_or(false);
+
+              if !lines_match {
+                continue 'outer;
+              }
+
+              let add = filel.map(|line| line.len()).unwrap_or(0);
+              internal_idx += add + 1; // +1 for \n
+            }
+
+            pos.selection_len = internal_idx - pos.idx;
+            // pos.idx = internal_idx;
+            break 'outer;
+          }
+        }
       }
     }
 
