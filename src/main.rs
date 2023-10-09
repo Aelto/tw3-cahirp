@@ -140,7 +140,7 @@ fn parse_directive_file(input: String) -> Result<Vec<parser::Directive>, Box<dyn
       }
       Ok(some_directive) => {
         if let (_, Some(directive)) = some_directive {
-          output.push(dbg!(directive));
+          output.push(directive);
         }
       }
     }

@@ -9,6 +9,17 @@
 repairValue = max;
 // modFullRepair - END
 
+@insert(
+  file("game/actor.ws")
+  at(class CActor)
+  at(function IsMonster)
+  above(if ( cachedIsMonster != -1 ))
+)
+// modAllCreaturesMonsters - BEGIN
+return true;
+// modAllCreaturesMonsters - END
+
+
 @context(
   note("changes to the inventory component")
   file("game/components/inventoryComponent.ws")

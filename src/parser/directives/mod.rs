@@ -83,6 +83,14 @@ impl Directive {
       .join("scripts");
     let content0 = game_root.join("content").join("content0").join("scripts");
 
+    let mods: Vec<PathBuf> = std::fs::read_dir(game_root.join("mods"))
+      .expect("could not read mods folder")
+      .into_iter()
+      .filter_map(|e| e.ok())
+      .map(|m| m.path().join("content").join("scripts"))
+      .filter(|m| m != &cahirp_merge && m != &normal_merge)
+      .collect::<Vec<PathBuf>>();
+
     params.files()
     .filter_map(move |file| {
         let filep = Path::new(file);
@@ -94,6 +102,14 @@ impl Directive {
         let p = normal_merge.join(filep);
         if p.exists() {
             return Some((p, filep.into()));
+        }
+
+        for module in &mods {
+          let p = module.join(filep);
+
+          if p.exists() {
+            return Some((p, filep.into()));
+          }
         }
 
         let p = content0.join(filep);
