@@ -12,6 +12,7 @@ use crate::codegen::FilePool;
 
 pub mod codegen;
 pub mod encoding;
+pub mod game;
 pub mod parser;
 
 fn main() -> Result<(), Box<dyn Error>> {
