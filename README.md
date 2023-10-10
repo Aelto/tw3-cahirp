@@ -146,3 +146,48 @@ It is possible to share mods with the merge recipes in them so the end-user runs
 the pre-processor after merging the other mods in order to safely and easily emit
 code.
 
+# Writing recipes
+```c
+@context(
+  file(game/player/r4Player.ws)
+  at(class CR4Player)
+)
+
+@insert(
+  note("makes that repair kits repair 100% of the item's durability")
+  at(function RepairItemUsingConsumable)
+  select(repairValue = max * itemValue /100;)
+)
+// modFullRepair - BEGIN
+repairValue = max;
+// modFullRepair - BEGIN
+```
+
+Let's start by examining an existing recipe:
+- `@insert()` is a **directive**,
+- in its parenthesis you can find parameters like `note()`, or `file`, or `at`
+- below the directive there is the code emitted by the directive. The code can span over
+multiple lines and it continues until the next directive or the end of the file.
+
+## Directives
+- `@insert` informs the pre-processor to emit code in one or many files at a given position
+  - parameters:
+    - `note` (optional, multiple notes is possible): like a comments, adds context to the directive
+      and can be used by the pre-processor to generate descriptions of the directives
+    - `file` (required, multiple files is possible): informs the pre-processor to
+    run the directive over the provided files. The path that is supplied should start
+    from the `The Witcher 3/content/content0/scripts` folder
+    - `at(pattern)` places the cursor at the start of the pattern,
+above places it on line above right before the `\n`,
+    - `below(pattern)` places it on the line below right after the `\n`
+    - `select(pattern)` places the cursor at the start of the pattern and removes
+    anything that is outside the pattern. Successive `select(pattern)` can be used
+    to progressively go deeper in the patterns. It can be used to declare "dependencies"
+    where the first select must exist before going deeper into the second the select
+    - `select[[multiline pattern]]` is like the normal select but on multiple lines,
+    the indentation of the lines is ignored to make it easier/cleaner
+- `@context` can be used to avoid repetitions in the `@insert` parameters by adding
+its own parameters to all the lower insert directives in the file. The context can
+grow by adding more context directives, the parameters of the second context are
+added after the ones of the first context. However context parameters are added
+in front of the `@insert` parameters 

@@ -113,7 +113,7 @@ fn parse_directive_file(input: String) -> Result<Vec<parser::Directive>, Box<dyn
   let mut output = Vec::new();
 
   // since we do not parse the code that a directive emits (to speed things up)
-  // we must use some clever thinking to find exactly when the current directive
+  // we must use some "clever" thinking to find exactly when the current directive
   // ends:
   // - if it's the last one in the file then it starts from the @ up until EOF
   // - if it's not the last one then it starts from the @ up until the next @
