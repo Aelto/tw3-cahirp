@@ -1,14 +1,13 @@
 use std::{
   cell::Cell,
   collections::HashMap,
-  error::Error,
   path::PathBuf,
   sync::{Arc, Mutex}
 };
 
 use rayon::prelude::*;
 
-use crate::{encoding::read_file, game::paths, parser::Directive};
+use crate::{encoding::read_file, error::CResult, game::paths, parser::Directive};
 
 use super::CodeEmitter;
 
@@ -28,7 +27,7 @@ pub struct FilePool {
 impl FilePool {
   /// At creation the [FilePool] generates the exhaustive flat list of files that
   /// directives will work on.
-  pub fn new(directives: Vec<Directive>, game_root: &PathBuf) -> Result<Self, Box<dyn Error>> {
+  pub fn new(directives: Vec<Directive>, game_root: &PathBuf) -> CResult<Self> {
     let mut locks = HashMap::new();
     let mods = paths::mod_folders(game_root)?;
 
