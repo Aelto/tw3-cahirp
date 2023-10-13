@@ -12,7 +12,7 @@ pub enum Commands {
     #[arg(short, long)]
     out: Option<PathBuf>,
 
-    #[arg(short, long)]
-    clean: Option<bool>
+    #[arg(short, long, action)]
+    clean: bool
   }
 }

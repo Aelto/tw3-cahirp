@@ -4,13 +4,14 @@ use std::path::PathBuf;
 use crate::codegen::FilePool;
 use crate::encoding::read_file;
 use crate::error::CResult;
+use crate::game::paths;
 use crate::parser::{Context, Directive};
 
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 pub fn build(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CResult<()> {
   if clean_before_build {
-    let cahirp_merge = Directive::cahirp_merge_path(&game_root);
+    let cahirp_merge = paths::cahirp_mod(&game_root);
     if cahirp_merge.exists() {
       println!("clearing existing cahirp merged files");
       std::fs::remove_dir_all(cahirp_merge)?;

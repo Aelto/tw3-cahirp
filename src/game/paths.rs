@@ -4,8 +4,12 @@ pub fn to_scripts(module: PathBuf) -> PathBuf {
   module.join("content").join("scripts")
 }
 
+pub fn cahirp_mod(game_root: &PathBuf) -> PathBuf {
+  game_root.join("mods").join("mod00000_Cahirp")
+}
+
 pub fn cahirp_folder(game_root: &PathBuf) -> PathBuf {
-  to_scripts(game_root.join("mods").join("mod00000_Cahirp"))
+  to_scripts(cahirp_mod(game_root))
 }
 
 pub fn merge_folder(game_root: &PathBuf) -> PathBuf {

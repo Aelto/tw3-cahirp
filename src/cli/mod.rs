@@ -19,8 +19,9 @@ impl Cli {
   pub fn execute(self) -> CResult<()> {
     match self.command {
       Commands::Build { game, out, clean } => {
-        // defaults to true unless `out` has a custom value
-        let clean_before_build = clean.unwrap_or(out.is_none());
+        // if using the default `out` folder it defaults to always cleaning
+        // first
+        let clean_before_build = clean || out.is_none();
 
         let game_root = game.unwrap_or_else(|| {
           #[cfg(debug_assertions)]
