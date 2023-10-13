@@ -8,17 +8,19 @@ use crate::parser::{Context, Directive};
 
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
-pub fn build(game_root: PathBuf, out: PathBuf) -> CResult<()> {
+pub fn build(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CResult<()> {
+  if clean_before_build {
+    let cahirp_merge = Directive::cahirp_merge_path(&game_root);
+    if cahirp_merge.exists() {
+      println!("clearing existing cahirp merged files");
+      std::fs::remove_dir_all(cahirp_merge)?;
+    }
+  }
+
   scan_mods(game_root)
 }
 
 fn scan_mods(game_root: PathBuf) -> CResult<()> {
-  let cahirp_merge = Directive::cahirp_merge_path(&game_root);
-  if cahirp_merge.exists() {
-    println!("clearing existing cahirp merged files");
-    std::fs::remove_dir_all(cahirp_merge)?;
-  }
-
   use rayon::prelude::*;
   let directives = list_mods(&game_root)
     .into_par_iter()

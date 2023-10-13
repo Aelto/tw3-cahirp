@@ -10,6 +10,9 @@ pub enum Commands {
     game: Option<PathBuf>,
 
     #[arg(short, long)]
-    out: Option<PathBuf>
+    out: Option<PathBuf>,
+
+    #[arg(short, long)]
+    clean: Option<bool>
   }
 }
