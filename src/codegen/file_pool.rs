@@ -27,15 +27,15 @@ pub struct FilePool {
 impl FilePool {
   /// At creation the [FilePool] generates the exhaustive flat list of files that
   /// directives will work on.
-  pub fn new(directives: Vec<Directive>, game_root: &PathBuf) -> CResult<Self> {
+  pub fn new(directives: Vec<Directive>, game_root: &PathBuf, out: &PathBuf) -> CResult<Self> {
     let mut locks = HashMap::new();
-    let mods = paths::mod_folders(game_root)?;
+    let mods = paths::mod_folders(game_root, out)?;
 
     // fill the locks so each file has a corresponding lock
     for directive in &directives {
       let suffixes = directive.file_suffixes();
       for suffix in suffixes {
-        let search_result = Self::find_file(&locks, game_root, &suffix, &mods);
+        let search_result = Self::find_file(&locks, game_root, &out, &suffix, &mods);
 
         match search_result {
           FileSearchResult::AlreadyInCache(_) => {}
@@ -58,10 +58,10 @@ impl FilePool {
   /// Generate code and mutate the inner "in-memory" file locks with the results
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
-  pub fn emit(self, game_root: &PathBuf) -> std::io::Result<Self> {
+  pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
     self.directives.par_iter().for_each(|directive| {
       for suffix in directive.file_suffixes() {
-        let arc = self.file_lock(game_root, &suffix);
+        let arc = self.file_lock(out, &suffix);
         let cell = arc.lock().expect("mutex poisoning error");
         let contents = cell.take();
         let new_contents = directive.insert.emit(contents, &directive.code);
@@ -99,10 +99,11 @@ impl FilePool {
   }
 
   fn find_file(
-    locks: &FileLockMap, game_root: &PathBuf, file_suffix: &PathBuf, mod_folders: &Vec<PathBuf>
+    locks: &FileLockMap, game_root: &PathBuf, out: &PathBuf, file_suffix: &PathBuf,
+    mod_folders: &Vec<PathBuf>
   ) -> FileSearchResult {
     fn find_merge_file(game_root: &PathBuf, file_suffix: &PathBuf) -> Option<String> {
-      read_file(&paths::merge_folder(game_root).join(file_suffix)).ok()
+      read_file(&paths::merge_scripts(game_root).join(file_suffix)).ok()
     }
 
     /// Find a file inside mod folders, this can happen when a file is edited
@@ -120,10 +121,10 @@ impl FilePool {
     }
 
     fn find_content_file(game_root: &PathBuf, file_suffix: &PathBuf) -> Option<String> {
-      read_file(&paths::content_folder(game_root).join(file_suffix)).ok()
+      read_file(&paths::content_scripts(game_root).join(file_suffix)).ok()
     }
 
-    let cahirp_file = paths::cahirp_folder(game_root).join(file_suffix);
+    let cahirp_file = out.join(file_suffix);
 
     if locks.contains_key(&cahirp_file) {
       FileSearchResult::AlreadyInCache(cahirp_file)
@@ -141,8 +142,8 @@ impl FilePool {
   }
 
   /// Get the file mutex for the given file suffix
-  pub fn file_lock(&self, game_root: &PathBuf, file_suffix: &PathBuf) -> Arc<Mutex<Cell<String>>> {
-    let path = paths::cahirp_folder(game_root).join(file_suffix);
+  pub fn file_lock(&self, out: &PathBuf, file_suffix: &PathBuf) -> Arc<Mutex<Cell<String>>> {
+    let path = out.join(file_suffix);
 
     Arc::clone(
       self

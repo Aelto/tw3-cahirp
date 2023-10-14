@@ -4,33 +4,31 @@ use std::path::PathBuf;
 use crate::codegen::FilePool;
 use crate::encoding::read_file;
 use crate::error::CResult;
-use crate::game::paths;
 use crate::parser::{Context, Directive};
 
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 pub fn build(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CResult<()> {
   if clean_before_build {
-    let cahirp_merge = paths::cahirp_mod(&game_root);
-    if cahirp_merge.exists() {
-      println!("clearing existing cahirp merged files");
-      std::fs::remove_dir_all(cahirp_merge)?;
+    if out.exists() {
+      println!("clearing existing cahirp output files");
+      std::fs::remove_dir_all(&out)?;
     }
   }
 
-  scan_mods(game_root)
+  scan_mods(game_root, out)
 }
 
-fn scan_mods(game_root: PathBuf) -> CResult<()> {
+fn scan_mods(game_root: PathBuf, out: PathBuf) -> CResult<()> {
   use rayon::prelude::*;
   let directives = list_mods(&game_root)
     .into_par_iter()
     .flat_map(|module| parse_mod_recipes(module.path()));
 
   let directives: Vec<Directive> = directives.collect();
-  let file_pool = FilePool::new(directives, &game_root)?;
+  let file_pool = FilePool::new(directives, &game_root, &out)?;
 
-  file_pool.emit(&game_root)?.persist()?;
+  file_pool.emit(&out)?.persist()?;
 
   Ok(())
 }
