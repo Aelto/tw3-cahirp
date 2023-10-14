@@ -33,14 +33,6 @@ impl Directive {
     self
   }
 
-  pub fn cahirp_merge_path(game_root: &PathBuf) -> PathBuf {
-    game_root
-      .join("mods")
-      .join("mod00000_Cahirp")
-      .join("content")
-      .join("scripts")
-  }
-
   pub fn file_suffixes<'a>(&'a self) -> impl Iterator<Item = PathBuf> + 'a {
     self
       .insert
