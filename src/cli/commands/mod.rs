@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 mod build;
 pub use build::build;
+pub use build::build_and_watch;
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Commands {
@@ -13,6 +14,9 @@ pub enum Commands {
     out: Option<PathBuf>,
 
     #[arg(short, long, action)]
-    clean: bool
+    clean: bool,
+
+    #[arg(short, long, action)]
+    watch: bool
   }
 }

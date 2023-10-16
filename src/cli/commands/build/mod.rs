@@ -6,12 +6,17 @@ use crate::encoding::read_file;
 use crate::error::CResult;
 use crate::parser::{Context, Directive};
 
+mod watcher;
+pub use watcher::build_and_watch;
+
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
-pub fn build(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CResult<()> {
+pub fn build(game_root: &PathBuf, out: &PathBuf, clean_before_build: bool) -> CResult<()> {
+  println!("building {}", out.display());
+
   if clean_before_build {
     if out.exists() {
-      println!("clearing existing cahirp output files");
+      println!("cleaning existing files");
       std::fs::remove_dir_all(&out)?;
     }
   }
@@ -19,7 +24,7 @@ pub fn build(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CRes
   scan_mods(game_root, out)
 }
 
-fn scan_mods(game_root: PathBuf, out: PathBuf) -> CResult<()> {
+fn scan_mods(game_root: &PathBuf, out: &PathBuf) -> CResult<()> {
   use rayon::prelude::*;
   let directives = list_mods(&game_root)
     .into_par_iter()
