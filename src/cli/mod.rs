@@ -18,7 +18,12 @@ pub struct Cli {
 impl Cli {
   pub fn execute(self) -> CResult<()> {
     match self.command {
-      Commands::Build { game, out, clean } => {
+      Commands::Build {
+        game,
+        out,
+        clean,
+        watch
+      } => {
         // if using the default `out` folder it defaults to always cleaning
         // first
         let clean_before_build = clean || out.is_none();
@@ -35,7 +40,11 @@ impl Cli {
 
         let out = out.unwrap_or_else(|| game_root.join("mods").join("mod00000_Cahirp"));
 
-        commands::build(game_root, out, clean_before_build)
+        if watch {
+          commands::build_and_watch(game_root, out, clean_before_build)
+        } else {
+          commands::build(&game_root, &out, clean_before_build)
+        }
       }
     }?;
 
