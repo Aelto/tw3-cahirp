@@ -96,6 +96,8 @@ pub fn build_and_watch(game_root: PathBuf, out: PathBuf, clean_before_build: boo
   Ok(())
 }
 
+/// Builds the recipes and safely handle any resulting error that may come from
+/// it
 fn handle_build(game_root: &PathBuf, out: &PathBuf, clean_before_build: bool, counter: &mut u64) {
   match super::build(&game_root, &out, clean_before_build) {
     Ok(()) => {
