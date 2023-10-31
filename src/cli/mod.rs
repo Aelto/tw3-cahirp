@@ -5,7 +5,7 @@ use crate::error::CResult;
 mod commands;
 pub use commands::Commands;
 
-mod prints;
+pub mod prints;
 
 #[derive(Debug, clap::Parser)]
 #[command(version)]

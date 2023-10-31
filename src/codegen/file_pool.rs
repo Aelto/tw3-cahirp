@@ -64,7 +64,14 @@ impl FilePool {
         let arc = self.file_lock(out, &suffix);
         let cell = arc.lock().expect("mutex poisoning error");
         let contents = cell.take();
-        let new_contents = directive.insert.emit(contents, &directive.code);
+        let new_contents = match directive.insert.emit(contents, &directive.code) {
+          Ok(s) => s,
+          Err(s) => {
+            crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
+
+            s
+          }
+        };
 
         cell.set(new_contents);
       }

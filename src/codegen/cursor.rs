@@ -29,7 +29,6 @@ impl CursorPosition {
 
   fn next_line<'a>(&'a mut self, lines: &'a mut std::iter::Peekable<Lines>) -> Option<&'a str> {
     self.idx += self._prev_line_len;
-    // self.line += 1;
 
     let line = lines.next();
     if let Some(line) = line {

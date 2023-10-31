@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use owo_colors::colors::*;
 use owo_colors::OwoColorize;
 
+use crate::parser::Parameters;
+
 mod badges {
 
   use super::*;
@@ -23,6 +25,12 @@ mod badges {
     let badge = format!(" #{n} ");
 
     badge.fg::<Black>().bg::<Yellow>().to_string()
+  }
+
+  pub fn miss() -> String {
+    let badge = " MISS ";
+
+    badge.fg::<White>().bg::<Red>().to_string()
   }
 }
 
@@ -60,6 +68,18 @@ pub fn watch_ctrlc() {
   let badge = badges::watch();
 
   println!("{badge} building one last time and closing...");
+}
+
+pub fn build_no_location_found(path: &PathBuf, params: &Parameters) {
+  let badge = badges::miss();
+
+  linebreak();
+  println!("{badge} {} no location found", path.display().green());
+
+  let spaces = " ".repeat(4);
+  for note in params.notes() {
+    println!("{spaces}└─ {note}");
+  }
 }
 
 pub fn linebreak() {

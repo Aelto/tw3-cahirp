@@ -5,8 +5,16 @@ use super::CodeCursor;
 pub trait CodeEmitter {
   fn parameters(&self) -> &Parameters;
 
-  fn emit(&self, mut file: String, code: &str) -> String {
-    let cursor = CodeCursor::from_parameters(self.parameters(), &file);
+  fn emit(&self, mut file: String, code: &str) -> Result<String, String> {
+    let params = self.parameters();
+    let cursor = CodeCursor::from_parameters(params, &file);
+
+    // the cursor itself has no notion of validity, here we check whether the
+    // resulting position is out of bound which means no valid position was
+    // found as the cursor looped until the EOF.
+    if !file.is_char_boundary(cursor.pos.idx) {
+      return Err(file);
+    }
 
     let (left, right) = file.split_at_mut(cursor.pos.idx);
 
@@ -15,7 +23,7 @@ pub trait CodeEmitter {
     output.push_str(&match_line_indentation(code, left));
     output.push_str(&right[cursor.pos.selection_len..]);
 
-    output
+    Ok(output)
   }
 }
 
