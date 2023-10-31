@@ -12,11 +12,11 @@ pub use watcher::build_and_watch;
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 pub fn build(game_root: &PathBuf, out: &PathBuf, clean_before_build: bool) -> CResult<()> {
-  println!("building {}", out.display());
+  crate::cli::prints::build(out);
 
   if clean_before_build {
     if out.exists() {
-      println!("cleaning existing files");
+      crate::cli::prints::clean_files();
       std::fs::remove_dir_all(&out)?;
     }
   }

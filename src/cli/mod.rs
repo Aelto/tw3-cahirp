@@ -5,6 +5,8 @@ use crate::error::CResult;
 mod commands;
 pub use commands::Commands;
 
+mod prints;
+
 #[derive(Debug, clap::Parser)]
 #[command(version)]
 pub struct Cli {
