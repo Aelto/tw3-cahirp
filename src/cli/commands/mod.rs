@@ -20,3 +20,14 @@ pub enum Commands {
     watch: bool
   }
 }
+
+impl Default for Commands {
+  fn default() -> Self {
+    Self::Build {
+      game: None,
+      out: None,
+      clean: true,
+      watch: false
+    }
+  }
+}

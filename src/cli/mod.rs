@@ -14,12 +14,12 @@ pub struct Cli {
   debug: bool,
 
   #[command(subcommand)]
-  pub command: Commands
+  pub command: Option<Commands>
 }
 
 impl Cli {
   pub fn execute(self) -> CResult<()> {
-    match self.command {
+    match self.command.unwrap_or_default() {
       Commands::Build {
         game,
         out,
