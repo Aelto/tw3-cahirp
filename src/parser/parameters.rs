@@ -115,7 +115,18 @@ pub enum Parameter {
 
   MultilineSelect(String),
 
-  Note(String)
+  Note(String),
+
+  /// Specifies a pattern to define **after** the directive has successfully
+  /// emitted code.
+  ///
+  /// If the directive contains [Parameter::IfDef] parameters then the `define`
+  /// calls won't execute until all of the [Parameter::IfDef] are valid.
+  Define(String),
+
+  /// Specifies a pattern that must be defined before the directive can emit
+  /// code.
+  IfDef(String)
 }
 
 impl Parameter {
@@ -128,7 +139,9 @@ impl Parameter {
       Self::parse_below,
       Self::parse_select,
       Self::parse_multiline_select,
-      Self::parse_note
+      Self::parse_note,
+      Self::parse_ifdef,
+      Self::parse_define
     ))(i)?;
     let (i, _) = trim(i)?;
 
@@ -178,6 +191,18 @@ impl Parameter {
     let (i, pattern) = Self::parse_parameter("note", i)?;
 
     Ok((i, Self::Note(pattern)))
+  }
+
+  fn parse_ifdef(i: &str) -> IResult<&str, Self> {
+    let (i, pattern) = Self::parse_parameter("ifdef", i)?;
+
+    Ok((i, Self::IfDef(pattern)))
+  }
+
+  fn parse_define(i: &str) -> IResult<&str, Self> {
+    let (i, pattern) = Self::parse_parameter("define", i)?;
+
+    Ok((i, Self::Define(pattern)))
   }
 
   fn parse_parameter<'a>(param_type: &'static str, i: &'a str) -> IResult<&'a str, String> {
