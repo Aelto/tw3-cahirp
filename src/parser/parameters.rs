@@ -60,6 +60,20 @@ impl Parameters {
       _ => None
     })
   }
+
+  pub fn defines<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+    self.0.iter().filter_map(|p| match p {
+      Parameter::Define(s) => Some(s.deref()),
+      _ => None
+    })
+  }
+
+  pub fn ifdefs<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+    self.0.iter().filter_map(|p| match p {
+      Parameter::IfDef(s) => Some(s.deref()),
+      _ => None
+    })
+  }
 }
 
 #[derive(Debug, Clone)]

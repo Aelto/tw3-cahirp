@@ -9,7 +9,7 @@ use rayon::prelude::*;
 
 use crate::{encoding::read_file, error::CResult, game::paths, parser::Directive};
 
-use super::CodeEmitter;
+use super::{CodeEmitter, FileDefsBuf};
 
 type FileLockMap = HashMap<PathBuf, Arc<Mutex<Cell<String>>>>;
 
@@ -58,8 +58,22 @@ impl FilePool {
   /// Generate code and mutate the inner "in-memory" file locks with the results
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
-  pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
-    self.directives.par_iter().for_each(|directive| {
+  pub fn emit(mut self, out: &PathBuf) -> std::io::Result<Self> {
+    let mut file_defs = FileDefsBuf::new();
+    let shared_file_defs = Arc::new(Mutex::new(&mut file_defs));
+
+    self.directives.par_iter_mut().for_each(|directive| { todo!("get directive as mutable")
+      let mut defs = shared_file_defs.lock().expect("file_defs_lock_collision");
+
+      if defs.should_skip_directive(&directive) {
+        defs.mark_as_skipped(&mut directive)
+      }
+
+      // for ifdefs in directive.insert.parameters().ifdefs() {
+      //   if defs.contains(var)
+      // }
+      // if shared_file_defs.lock
+
       for suffix in directive.file_suffixes() {
         let arc = self.file_lock(out, &suffix);
         let cell = arc.lock().expect("mutex poisoning error");

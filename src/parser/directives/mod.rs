@@ -6,8 +6,15 @@ pub use crate::parser::prelude::*;
 mod insert;
 pub use insert::InsertDirective;
 
+mod id;
+pub use id::DirectiveId;
+
 #[derive(Debug)]
 pub struct Directive {
+  /// An optional ID that can be obtained from a [FileDefsBuf](crate::codegen::FileDefsBuf)
+  /// in order to reliably identify directives over multiple codegen passes.
+  pub id: Option<DirectiveId>,
+
   pub insert: InsertDirective,
   pub code: String
 }
@@ -18,7 +25,14 @@ impl Directive {
     let (i, insert) = Self::parse_insert(i)?;
     let code = i.trim().to_owned();
 
-    Ok(("", Self { insert, code }))
+    Ok((
+      "",
+      Self {
+        insert,
+        code,
+        id: None
+      }
+    ))
   }
 
   fn parse_insert(i: &str) -> IResult<&str, InsertDirective> {

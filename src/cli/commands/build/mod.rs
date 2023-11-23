@@ -31,7 +31,7 @@ fn scan_mods(game_root: &PathBuf, out: &PathBuf) -> CResult<()> {
     .flat_map(|module| parse_mod_recipes(module.path()));
 
   let directives: Vec<Directive> = directives.collect();
-  let file_pool = FilePool::new(directives, &game_root, &out)?;
+  let mut file_pool = FilePool::new(directives, &game_root, &out)?;
 
   file_pool.emit(&out)?.persist()?;
 
