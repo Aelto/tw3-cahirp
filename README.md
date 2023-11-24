@@ -165,6 +165,10 @@ It is possible to share mods with the merge recipes in them so the end-user runs
 the pre-processor after merging the other mods in order to safely and easily emit
 code.
 
+The pre-processor default parameters are configured for this situation, so running
+the tool without any special argument will parse all recipes that can be found in
+the mods installed in the game install directory in order to emit a `mods/mod00000_Cahirp` mod folder.
+
 # Writing recipes
 ```c
 @context(
