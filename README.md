@@ -155,6 +155,10 @@ used to generate the merges using the currently installed version of the game.
     tw3-cahirp build --game /games/the-witcher-3 --out ./release/myMod/content/scripts --recipes src/myMod/cahirp --watch --clean
     ```
 
+### Mods using cahirp for development
+- [TW3 CROW](https://github.com/Aelto/tw3-crow)
+- [TW3 Combat Skills](https://github.com/Aelto/tw3-combat-skills)
+
 ## After shipping, by the end user (mod user)
 see:
 - [Conflict free](#conflict-free)
