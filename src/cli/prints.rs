@@ -32,6 +32,16 @@ mod badges {
 
     badge.fg::<White>().bg::<Red>().to_string()
   }
+
+  pub fn debug() -> String {
+    let badge = " DEBUG ";
+
+    badge.fg::<White>().bg::<Magenta>().to_string()
+  }
+}
+
+pub fn verbose_debug(message: String) {
+  println!("{} {message}", badges::debug());
 }
 
 pub fn build(path: &PathBuf) {

@@ -50,6 +50,8 @@ impl CodeCursor {
       match param {
         Parameter::File(_) => continue,
         Parameter::Note(_) => continue,
+        Parameter::IfDef(_) => continue,
+        Parameter::Define(_) => continue,
         Parameter::At(pat) => {
           while let Some(line) = pos.next_line(&mut lines) {
             if line.contains(pat) {

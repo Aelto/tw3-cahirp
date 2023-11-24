@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::codegen::FilePool;
 use crate::encoding::read_file;
 use crate::error::CResult;
-use crate::parser::{Context, Directive};
+use crate::parser::{Context, Directive, DirectiveId};
 
 mod watcher;
 pub use watcher::build_and_watch;
@@ -30,7 +30,15 @@ fn scan_mods(game_root: &PathBuf, out: &PathBuf) -> CResult<()> {
     .into_par_iter()
     .flat_map(|module| parse_mod_recipes(module.path()));
 
-  let directives: Vec<Directive> = directives.collect();
+  let mut directives: Vec<Directive> = directives.collect();
+
+  // assigns ids to the directives
+  let mut index = 0;
+  for directive in &mut directives {
+    directive.id = DirectiveId::new(index);
+    index += 1;
+  }
+
   let file_pool = FilePool::new(directives, &game_root, &out)?;
 
   file_pool.emit(&out)?.persist()?;

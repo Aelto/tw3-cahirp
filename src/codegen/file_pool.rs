@@ -9,7 +9,7 @@ use rayon::prelude::*;
 
 use crate::{encoding::read_file, error::CResult, game::paths, parser::Directive};
 
-use super::CodeEmitter;
+use super::{CodeEmitter, FileDefsBuf};
 
 type FileLockMap = HashMap<PathBuf, Arc<Mutex<Cell<String>>>>;
 
@@ -50,8 +50,8 @@ impl FilePool {
     }
 
     Ok(Self {
-      directives,
-      file_locks: locks
+      file_locks: locks,
+      directives
     })
   }
 
@@ -59,23 +59,40 @@ impl FilePool {
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
   pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
-    self.directives.par_iter().for_each(|directive| {
-      for suffix in directive.file_suffixes() {
-        let arc = self.file_lock(out, &suffix);
-        let cell = arc.lock().expect("mutex poisoning error");
-        let contents = cell.take();
-        let new_contents = match directive.insert.emit(contents, &directive.code) {
-          Ok(s) => s,
-          Err(s) => {
-            crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
+    let mut file_defs = FileDefsBuf::new();
+    let mut is_new_pass_needed = true;
+    while is_new_pass_needed {
+      let executed_directives: Vec<&Directive> = self
+        .directives
+        .par_iter()
+        .filter(|directive| file_defs.can_execute_directive(directive))
+        .map(|directive| {
+          for suffix in directive.file_suffixes() {
+            let arc = self.file_lock(out, &suffix);
+            let cell = arc.lock().expect("mutex poisoning error");
+            let contents = cell.take();
+            let new_contents = match directive.insert.emit(contents, &directive.code) {
+              Ok(s) => s,
+              Err(s) => {
+                crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
 
-            s
+                s
+              }
+            };
+
+            cell.set(new_contents);
           }
-        };
 
-        cell.set(new_contents);
+          directive
+        })
+        .collect();
+
+      for directive in executed_directives {
+        file_defs.mark_as_executed(directive);
       }
-    });
+
+      is_new_pass_needed = file_defs.next_pass(super::file_defs_buf::FileDefsMode::OnlyNew);
+    }
 
     Ok(self)
   }

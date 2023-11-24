@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use crate::codegen::CodeEmitter;
 pub use crate::parser::prelude::*;
@@ -6,8 +6,13 @@ pub use crate::parser::prelude::*;
 mod insert;
 pub use insert::InsertDirective;
 
+mod id;
+pub use id::DirectiveId;
+
 #[derive(Debug)]
 pub struct Directive {
+  pub id: DirectiveId,
+
   pub insert: InsertDirective,
   pub code: String
 }
@@ -18,7 +23,14 @@ impl Directive {
     let (i, insert) = Self::parse_insert(i)?;
     let code = i.trim().to_owned();
 
-    Ok(("", Self { insert, code }))
+    Ok((
+      "",
+      Self {
+        insert,
+        code,
+        id: DirectiveId::default()
+      }
+    ))
   }
 
   fn parse_insert(i: &str) -> IResult<&str, InsertDirective> {
@@ -39,5 +51,14 @@ impl Directive {
       .parameters()
       .files()
       .map(|suffix| PathBuf::from(suffix))
+  }
+}
+
+impl Display for Directive {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    use owo_colors::OwoColorize;
+    write!(f, "Directive(id={})", self.id.magenta())?;
+
+    Ok(())
   }
 }
