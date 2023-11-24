@@ -1,5 +1,8 @@
 set shell := ["nu", "-c"]
 
+release:
+  cargo b --release
+
 dev: dev-build
 
 dev-build:
