@@ -1,5 +1,6 @@
 @insert(
   note("makes that repair kits repair 100% of the item's durability")
+  define("fullrepair_0")
   file(game/player/r4Player.ws)
   at(class CR4Player)
   at(function RepairItemUsingConsumable)
@@ -38,6 +39,7 @@ RER_onItemAdded(this, data);
 
 
 @insert(
+  ifdef("fullrepair_0")
   at(function GetItemPrimaryStat)
   select[[
     if(attributeValue.valueBase != 0)
