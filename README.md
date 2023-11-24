@@ -136,6 +136,25 @@ The tool can be used while crafting mods, to organize, re-use, and share merge r
 Once the mod is ready to be shipped and shared to the world the pre-processor can be
 used to generate the merges using the currently installed version of the game.
 
+### Command examples
+- building all mods currently installed into a mod in the current working directory named `release/myMod`
+  - `--game` is used to target a game install from elsewhere
+  - `--out` is used to tell cahirp to emit the merges in the provided folder
+  - `--clean` instructs cahirp to clean the `--out` folder before emitting merges
+  ```sh
+  tw3-cahirp build --game /games/the-witcher-3 --out ./release/myMod/content/scripts --clean
+  ```
+
+- watching for changes in the dev recipes and updating a ready to release mod
+  - `--game` is used to target a game install from elsewhere
+  - `--out` is used to tell cahirp to emit the merges in the provided folder
+  - `--watch` tells cahirp to continuously watch for changes on the recipes and rebuild when needed
+  - `--mod` is used to use a specific mod folder for the recipes rather than the mods installed in `--game`
+  - `--clean` instructs cahirp to clean the `--out` folder before emitting merges
+  ```sh
+  tw3-cahirp build --game /games/the-witcher-3 --out ./release/myMod/content/scripts --mod src/myMod --watch --clean
+  ```
+
 ## After shipping, by the end user (mod user)
 see:
 - [Conflict free](#conflict-free)
