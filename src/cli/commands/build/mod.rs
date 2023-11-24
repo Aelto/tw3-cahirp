@@ -11,26 +11,38 @@ pub use watcher::build_and_watch;
 
 use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
-pub fn build(game_root: &PathBuf, out: &PathBuf, clean_before_build: bool) -> CResult<()> {
+pub struct BuildOptions {
+  pub clean_before_build: bool,
+  pub mod_override: Option<PathBuf>
+}
+
+pub fn build(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CResult<()> {
   crate::cli::prints::build(out);
 
-  if clean_before_build {
+  if options.clean_before_build {
     if out.exists() {
       crate::cli::prints::clean_files();
       std::fs::remove_dir_all(&out)?;
     }
   }
 
-  scan_mods(game_root, out)
+  scan_mods(game_root, out, &options)
 }
 
-fn scan_mods(game_root: &PathBuf, out: &PathBuf) -> CResult<()> {
+fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CResult<()> {
   use rayon::prelude::*;
-  let directives = list_mods(&game_root)
-    .into_par_iter()
-    .flat_map(|module| parse_mod_recipes(module.path()));
-
-  let mut directives: Vec<Directive> = directives.collect();
+  let mut directives: Vec<Directive> = match options.mod_override.as_ref() {
+    // no mod override, scan the "mods" folder deduced from the game_root
+    None => list_mods(&game_root)
+      .into_par_iter()
+      .flat_map(|module| parse_mod_recipes(module.path()))
+      .collect(),
+    // an override is provided, scan only this module
+    Some(module) => vec![module]
+      .into_par_iter()
+      .flat_map(|module| parse_mod_recipes(module.to_path_buf()))
+      .collect()
+  };
 
   // assigns ids to the directives
   let mut index = 0;
