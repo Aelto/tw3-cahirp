@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use crate::parser::{Directive, DirectiveId};
+use crate::{
+  cli::prints::verbose_debug,
+  parser::{Directive, DirectiveId}
+};
 
 use super::CodeEmitter;
 
@@ -16,16 +19,8 @@ pub struct FileDefsBuf<'a> {
   /// Stores the definitions that were added during the current pass
   current_pass: HashSet<&'a str>,
 
-  /// Stores the directives that were skipped in the previous pass and tha may
-  /// need attention during the next pass.
-  ///
-  /// It assumes there will always be fewer skipped directives (that were locked
-  /// by invalid conditions) than valid ones, which is why it stores the skipped
-  /// ones instead of storing the successful ones.
-  skipped_directives: HashSet<DirectiveId>,
-
-  /// An internal counter that is used to generate unique IDs for the [Directive]s
-  internal_id_counter: usize,
+  /// Stores the directives that were executed in the previous passes
+  executed_directives: HashSet<DirectiveId>,
 
   /// Controls how the file defs buffer operates, whether it yields the [`Directive`]s
   /// for all definitions or only the [`Directive`]s from definitions that changed
@@ -44,8 +39,7 @@ impl<'a> FileDefsBuf<'a> {
     let mut out = Self {
       variables: HashSet::new(),
       current_pass: HashSet::new(),
-      skipped_directives: HashSet::new(),
-      internal_id_counter: 0,
+      executed_directives: HashSet::new(),
       mode: FileDefsMode::All
     };
 
@@ -53,61 +47,89 @@ impl<'a> FileDefsBuf<'a> {
     out
   }
 
-  pub fn contains(&self, var: &str) -> bool {
-    self.variables.contains(var)
-  }
-
-  fn next_id(&mut self) -> usize {
-    self.internal_id_counter += 1;
-
-    self.internal_id_counter
-  }
-
-  pub fn mark_as_skipped(&mut self, directive: &mut Directive) {
-    let id_to_insert = match directive.id {
-      None => {
-        let id = DirectiveId::new(self.next_id());
-
-        directive.id = Some(id);
-        id
-      }
-      Some(id) => id
-    };
-
-    self.skipped_directives.insert(id_to_insert);
-  }
-
-  pub fn mark_as_executed(&mut self, id: &DirectiveId) {
-    self.skipped_directives.remove(&id);
-  }
-
-  pub fn is_directive_marked_as_skipped(&self, id: &DirectiveId) -> bool {
-    self.skipped_directives.contains(&id)
-  }
-
-  pub fn should_skip_directive(&self, directive: &Directive) -> bool {
-    !directive
+  fn has_all_variable_requirements(&self, directive: &Directive) -> bool {
+    directive
       .insert
       .parameters()
       .ifdefs()
-      .all(|variable| self.contains(variable))
+      .all(|var| self.variables.contains(var))
   }
 
-  pub fn register<'b>(&mut self, var: &'b str) -> bool
+  pub fn can_execute_directive(&self, directive: &Directive) -> bool {
+    match self.mode {
+      FileDefsMode::All => {
+        if self.has_all_variable_requirements(directive) {
+          true
+        } else {
+          false
+        }
+      }
+      // in this mode only the directives that were previously skipped are
+      // treated, and only the ones that have all variables defined.
+      FileDefsMode::OnlyNew => {
+        if self.executed_directives.contains(&directive.id) {
+          false
+        } else if self.has_all_variable_requirements(directive) {
+          true
+        } else {
+          false
+        }
+      }
+    }
+  }
+
+  pub fn mark_as_executed<'b>(&mut self, directive: &'b Directive)
   where
     'b: 'a
   {
+    if crate::VERBOSE {
+      verbose_debug(format!("executed({directive})"));
+    }
+
+    self.executed_directives.insert(directive.id);
+    self.register_defines(directive)
+  }
+
+  fn register_defines<'b>(&mut self, directive: &'b Directive)
+  where
+    'b: 'a
+  {
+    for define in directive.insert.parameters().defines() {
+      self.register(define);
+    }
+  }
+
+  fn register<'b>(&mut self, var: &'b str) -> bool
+  where
+    'b: 'a
+  {
+    if crate::VERBOSE {
+      verbose_debug(format!("registered(define={var})"));
+    }
+
     self.current_pass.insert(var);
     self.variables.insert(var)
   }
 
-  pub fn unregister(&mut self, var: &str) -> bool {
-    self.current_pass.remove(var);
-    self.variables.remove(var)
-  }
+  /// Prepare for the next pass, and return whether the next pass is needed
+  pub fn next_pass(&mut self, mode: FileDefsMode) -> bool {
+    // a new pass is only needed if new variables were defined during the
+    // previous pass
+    let next_pass_needed = !self.current_pass.is_empty();
 
-  pub fn next_pass(&mut self, mode: FileDefsMode) {
+    if crate::VERBOSE {
+      verbose_debug(format!(
+        "code_emitting, next_pass(next_pass_needed={next_pass_needed})"
+      ));
+
+      for define in &self.current_pass {
+        verbose_debug(format!("- define={define}"));
+      }
+    }
+
     self.current_pass.clear();
     self.mode = mode;
+
+    next_pass_needed
   }
 }

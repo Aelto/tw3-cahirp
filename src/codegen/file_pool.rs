@@ -50,46 +50,49 @@ impl FilePool {
     }
 
     Ok(Self {
-      directives,
-      file_locks: locks
+      file_locks: locks,
+      directives
     })
   }
 
   /// Generate code and mutate the inner "in-memory" file locks with the results
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
-  pub fn emit(mut self, out: &PathBuf) -> std::io::Result<Self> {
+  pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
     let mut file_defs = FileDefsBuf::new();
-    let shared_file_defs = Arc::new(Mutex::new(&mut file_defs));
+    let mut is_new_pass_needed = true;
+    while is_new_pass_needed {
+      let executed_directives: Vec<&Directive> = self
+        .directives
+        .par_iter()
+        .filter(|directive| file_defs.can_execute_directive(directive))
+        .map(|directive| {
+          for suffix in directive.file_suffixes() {
+            let arc = self.file_lock(out, &suffix);
+            let cell = arc.lock().expect("mutex poisoning error");
+            let contents = cell.take();
+            let new_contents = match directive.insert.emit(contents, &directive.code) {
+              Ok(s) => s,
+              Err(s) => {
+                crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
 
-    self.directives.par_iter_mut().for_each(|directive| { todo!("get directive as mutable")
-      let mut defs = shared_file_defs.lock().expect("file_defs_lock_collision");
+                s
+              }
+            };
 
-      if defs.should_skip_directive(&directive) {
-        defs.mark_as_skipped(&mut directive)
-      }
-
-      // for ifdefs in directive.insert.parameters().ifdefs() {
-      //   if defs.contains(var)
-      // }
-      // if shared_file_defs.lock
-
-      for suffix in directive.file_suffixes() {
-        let arc = self.file_lock(out, &suffix);
-        let cell = arc.lock().expect("mutex poisoning error");
-        let contents = cell.take();
-        let new_contents = match directive.insert.emit(contents, &directive.code) {
-          Ok(s) => s,
-          Err(s) => {
-            crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
-
-            s
+            cell.set(new_contents);
           }
-        };
 
-        cell.set(new_contents);
+          directive
+        })
+        .collect();
+
+      for directive in executed_directives {
+        file_defs.mark_as_executed(directive);
       }
-    });
+
+      is_new_pass_needed = file_defs.next_pass(super::file_defs_buf::FileDefsMode::OnlyNew);
+    }
 
     Ok(self)
   }
