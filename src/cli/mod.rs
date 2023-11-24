@@ -23,6 +23,7 @@ impl Cli {
       Commands::Build {
         game,
         out,
+        r#mod,
         clean,
         watch
       } => {
@@ -40,12 +41,23 @@ impl Cli {
           path.into()
         });
 
-        let out = out.unwrap_or_else(|| game_root.join("mods").join("mod00000_Cahirp"));
+        let out = out.unwrap_or_else(|| {
+          game_root
+            .join("mods")
+            .join("mod00000_Cahirp")
+            .join("content")
+            .join("scripts")
+        });
+
+        let options = commands::BuildOptions {
+          clean_before_build,
+          mod_override: r#mod
+        };
 
         if watch {
-          commands::build_and_watch(game_root, out, clean_before_build)
+          commands::build_and_watch(game_root, out, &options)
         } else {
-          commands::build(&game_root, &out, clean_before_build)
+          commands::build(&game_root, &out, &options)
         }
       }
     }?;
