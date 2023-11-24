@@ -4,6 +4,8 @@ use notify_debouncer_full::DebounceEventHandler;
 
 use crate::{error::CResult, game::paths};
 
+use super::BuildOptions;
+
 /// Kinds of events the Producer/Sender channel transmits & that are handled by
 /// the [build_and_watch()] function
 enum WatchEvent {
@@ -43,7 +45,7 @@ impl DebounceEventHandler for WatchEmitter {
   }
 }
 
-pub fn build_and_watch(game_root: PathBuf, out: PathBuf, clean_before_build: bool) -> CResult<()> {
+pub fn build_and_watch(game_root: PathBuf, out: PathBuf, options: &BuildOptions) -> CResult<()> {
   use notify_debouncer_full::{new_debouncer, notify::*};
 
   let mods_folder = paths::mods_folder(&game_root);
@@ -74,7 +76,7 @@ pub fn build_and_watch(game_root: PathBuf, out: PathBuf, clean_before_build: boo
   let mut counter = 0;
 
   // instantly perform a build when starting the watch mode:
-  handle_build(&game_root, &out, clean_before_build, &mut counter);
+  handle_build(&game_root, &out, &options, &mut counter);
 
   ctrlc::set_handler(move || {
     if let Err(e) = tx.send(WatchEvent::BuildAndClose) {
@@ -91,12 +93,12 @@ pub fn build_and_watch(game_root: PathBuf, out: PathBuf, clean_before_build: boo
         // BuildAndClose event.
         crate::cli::prints::clear();
 
-        handle_build(&game_root, &out, clean_before_build, &mut counter)
+        handle_build(&game_root, &out, &options, &mut counter)
       }
       WatchEvent::BuildAndClose => {
         crate::cli::prints::clear();
         crate::cli::prints::watch_ctrlc();
-        handle_build(&game_root, &out, clean_before_build, &mut counter);
+        handle_build(&game_root, &out, &options, &mut counter);
         break;
       }
     }
@@ -107,10 +109,10 @@ pub fn build_and_watch(game_root: PathBuf, out: PathBuf, clean_before_build: boo
 
 /// Builds the recipes and safely handle any resulting error that may come from
 /// it
-fn handle_build(game_root: &PathBuf, out: &PathBuf, clean_before_build: bool, counter: &mut u64) {
+fn handle_build(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions, counter: &mut u64) {
   let before = std::time::Instant::now();
 
-  match super::build(&game_root, &out, clean_before_build) {
+  match super::build(&game_root, &out, options) {
     Ok(()) => {
       crate::cli::prints::watch_rebuild(*counter, out, before);
       *counter += 1;
