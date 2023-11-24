@@ -149,10 +149,10 @@ used to generate the merges using the currently installed version of the game.
   - `--game` is used to target a game install from elsewhere
   - `--out` is used to tell cahirp to emit the merges in the provided folder
   - `--watch` tells cahirp to continuously watch for changes on the recipes and rebuild when needed
-  - `--mod` is used to use a specific mod folder for the recipes rather than the mods installed in `--game`
+  - `--recipes` is used to use a specific folder for the recipes rather than the mods installed in `--game`
   - `--clean` instructs cahirp to clean the `--out` folder before emitting merges
   - ```sh
-    tw3-cahirp build --game /games/the-witcher-3 --out ./release/myMod/content/scripts --mod src/myMod --watch --clean
+    tw3-cahirp build --game /games/the-witcher-3 --out ./release/myMod/content/scripts --recipes src/myMod/cahirp --watch --clean
     ```
 
 ## After shipping, by the end user (mod user)
