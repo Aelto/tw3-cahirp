@@ -40,7 +40,13 @@ impl Cli {
           path.into()
         });
 
-        let out = out.unwrap_or_else(|| game_root.join("mods").join("mod00000_Cahirp"));
+        let out = out.unwrap_or_else(|| {
+          game_root
+            .join("mods")
+            .join("mod00000_Cahirp")
+            .join("content")
+            .join("scripts")
+        });
 
         if watch {
           commands::build_and_watch(game_root, out, clean_before_build)
