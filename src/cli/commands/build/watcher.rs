@@ -63,15 +63,20 @@ pub fn build_and_watch(game_root: PathBuf, out: PathBuf, options: &BuildOptions)
     }
   )?;
 
+  let folder_to_watch = match options.recipes_dir.as_ref() {
+    Some(f) => f,
+    None => &mods_folder
+  };
+
   debouncer
     .watcher()
-    .watch(&mods_folder, RecursiveMode::Recursive)?;
+    .watch(&folder_to_watch, RecursiveMode::Recursive)?;
 
   debouncer.watcher().unwatch(&out)?;
 
   debouncer
     .cache()
-    .add_root(&mods_folder, RecursiveMode::Recursive);
+    .add_root(&folder_to_watch, RecursiveMode::Recursive);
 
   let mut counter = 0;
 
