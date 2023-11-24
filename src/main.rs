@@ -1,5 +1,7 @@
 #![feature(map_try_insert)]
 
+pub const VERBOSE: bool = cfg!(debug_assertions);
+
 use error::CResult;
 
 pub mod cli;
