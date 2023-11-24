@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 use crate::codegen::CodeEmitter;
 pub use crate::parser::prelude::*;
@@ -11,9 +11,7 @@ pub use id::DirectiveId;
 
 #[derive(Debug)]
 pub struct Directive {
-  /// An optional ID that can be obtained from a [FileDefsBuf](crate::codegen::FileDefsBuf)
-  /// in order to reliably identify directives over multiple codegen passes.
-  pub id: Option<DirectiveId>,
+  pub id: DirectiveId,
 
   pub insert: InsertDirective,
   pub code: String
@@ -30,7 +28,7 @@ impl Directive {
       Self {
         insert,
         code,
-        id: None
+        id: DirectiveId::default()
       }
     ))
   }
@@ -53,5 +51,14 @@ impl Directive {
       .parameters()
       .files()
       .map(|suffix| PathBuf::from(suffix))
+  }
+}
+
+impl Display for Directive {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    use owo_colors::OwoColorize;
+    write!(f, "Directive(id={})", self.id.magenta())?;
+
+    Ok(())
   }
 }
