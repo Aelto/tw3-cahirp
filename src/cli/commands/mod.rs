@@ -16,9 +16,9 @@ pub enum Commands {
     #[arg(short, long)]
     out: Option<PathBuf>,
 
-    /// A specific mod folder to use rather all mods from "<GAME>/mods"
+    /// A specific folder to read for recipes rather than all the mods from "<GAME>/mods"
     #[arg(short, long)]
-    r#mod: Option<PathBuf>,
+    recipes: Option<PathBuf>,
 
     /// Instruct to clean the <OUT> directory before building, forced to "true" if <OUT> uses its default value
     #[arg(short, long, action)]
@@ -35,7 +35,7 @@ impl Default for Commands {
     Self::Build {
       game: None,
       out: None,
-      r#mod: None,
+      recipes: None,
       clean: true,
       watch: false
     }

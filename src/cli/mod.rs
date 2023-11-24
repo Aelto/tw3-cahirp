@@ -23,7 +23,7 @@ impl Cli {
       Commands::Build {
         game,
         out,
-        r#mod,
+        recipes,
         clean,
         watch
       } => {
@@ -51,7 +51,7 @@ impl Cli {
 
         let options = commands::BuildOptions {
           clean_before_build,
-          mod_override: r#mod
+          recipes_dir: recipes
         };
 
         if watch {

@@ -13,7 +13,7 @@ use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
 pub struct BuildOptions {
   pub clean_before_build: bool,
-  pub mod_override: Option<PathBuf>
+  pub recipes_dir: Option<PathBuf>
 }
 
 pub fn build(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CResult<()> {
@@ -31,16 +31,17 @@ pub fn build(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CRes
 
 fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CResult<()> {
   use rayon::prelude::*;
-  let mut directives: Vec<Directive> = match options.mod_override.as_ref() {
+  let mut directives: Vec<Directive> = match options.recipes_dir.as_ref() {
     // no mod override, scan the "mods" folder deduced from the game_root
     None => list_mods(&game_root)
       .into_par_iter()
-      .flat_map(|module| parse_mod_recipes(module.path()))
+      // recipes are expected to be in a `cahirp` folder inside the mods
+      .flat_map(|module| parse_dir_recipes(module.path().join("cahirp")))
       .collect(),
-    // an override is provided, scan only this module
-    Some(module) => vec![module]
+    // an override is provided, scan only this folder for recipes
+    Some(dir) => vec![dir]
       .into_par_iter()
-      .flat_map(|module| parse_mod_recipes(module.to_path_buf()))
+      .flat_map(|module| parse_dir_recipes(module.to_path_buf()))
       .collect()
   };
 
@@ -79,8 +80,8 @@ fn list_mods(game_root: &PathBuf) -> impl rayon::iter::ParallelIterator<Item = D
 /// List the recipes for the given module, then parse them while also handling
 /// any eventual error during the process then return an iterator of the parsed
 /// directives from all recipes that were found.
-fn parse_mod_recipes<'a>(module: PathBuf) -> impl ParallelIterator<Item = Directive> + 'a {
-  let files = match read_mod_directive_files(&module) {
+fn parse_dir_recipes<'a>(module: PathBuf) -> impl ParallelIterator<Item = Directive> + 'a {
+  let files = match read_dir_directive_files(&module) {
     Ok(f) => f,
     Err(e) => {
       panic!("error reading recipes for {module:?}: {e}");
@@ -100,9 +101,7 @@ fn parse_mod_recipes<'a>(module: PathBuf) -> impl ParallelIterator<Item = Direct
     .flat_map(|directives| directives)
 }
 
-fn read_mod_directive_files(module: &PathBuf) -> CResult<Vec<String>> {
-  let folder = module.join("cahirp");
-
+fn read_dir_directive_files(folder: &PathBuf) -> CResult<Vec<String>> {
   match std::fs::read_dir(folder) {
     Err(_) => Ok(Vec::new()),
     Ok(dir) => {
