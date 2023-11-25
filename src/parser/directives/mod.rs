@@ -47,10 +47,13 @@ impl Directive {
 
   pub fn file_suffixes<'a>(&'a self) -> impl Iterator<Item = PathBuf> + 'a {
     self
-      .insert
       .parameters()
       .files()
       .map(|suffix| PathBuf::from(suffix))
+  }
+
+  pub fn parameters(&self) -> &Parameters {
+    self.insert.parameters()
   }
 }
 

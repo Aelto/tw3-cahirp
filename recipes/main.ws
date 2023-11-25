@@ -30,6 +30,7 @@ return true;
 @insert(
   note("add our own event listener for when an item is added to the inventory")
   at(event OnItemAdded)
+  ifndef("mod.sharedutils")
   below(ent = (CGameplayEntity)GetEntity())
 
 )

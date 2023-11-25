@@ -74,6 +74,28 @@ impl Parameters {
       _ => None
     })
   }
+
+  pub fn ifndefs<'a>(&'a self) -> impl Iterator<Item = &'a str> {
+    self.0.iter().filter_map(|p| match p {
+      Parameter::IfNotDef(s) => Some(s.deref()),
+      _ => None
+    })
+  }
+
+  pub fn has_ifndefs(&self) -> bool {
+    self.0.iter().any(|p| match p {
+      Parameter::IfNotDef(_) => true,
+      _ => false
+    })
+  }
+
+  pub fn has_ifndef_or_ifdef(&self) -> bool {
+    self.0.iter().any(|p| match p {
+      Parameter::IfNotDef(_) => true,
+      Parameter::IfDef(_) => true,
+      _ => false
+    })
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -140,7 +162,14 @@ pub enum Parameter {
 
   /// Specifies a pattern that must be defined before the directive can emit
   /// code.
-  IfDef(String)
+  IfDef(String),
+
+  /// The opposite of a [Parameter::IfDef]: specifies a pattern that must NOT
+  /// be defined before the directive can emit code.
+  ///
+  /// _It has the side-effect of delaying the code emitting by 1 pass to allow
+  /// variables to be defined before it is even tested._
+  IfNotDef(String)
 }
 
 impl Parameter {
@@ -155,6 +184,7 @@ impl Parameter {
       Self::parse_multiline_select,
       Self::parse_note,
       Self::parse_ifdef,
+      Self::parse_ifndef,
       Self::parse_define
     ))(i)?;
     let (i, _) = trim(i)?;
@@ -211,6 +241,12 @@ impl Parameter {
     let (i, pattern) = Self::parse_parameter("ifdef", i)?;
 
     Ok((i, Self::IfDef(pattern)))
+  }
+
+  fn parse_ifndef(i: &str) -> IResult<&str, Self> {
+    let (i, pattern) = Self::parse_parameter("ifndef", i)?;
+
+    Ok((i, Self::IfNotDef(pattern)))
   }
 
   fn parse_define(i: &str) -> IResult<&str, Self> {

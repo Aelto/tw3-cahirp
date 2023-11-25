@@ -1,15 +1,17 @@
 use std::{
   cell::Cell,
-  collections::HashMap,
+  collections::{HashMap, HashSet},
   path::PathBuf,
   sync::{Arc, Mutex}
 };
 
 use rayon::prelude::*;
 
-use crate::{encoding::read_file, error::CResult, game::paths, parser::Directive};
+use crate::{
+  cli::prints::verbose_debug, encoding::read_file, error::CResult, game::paths, parser::Directive
+};
 
-use super::{CodeEmitter, FileDefsBuf};
+use super::{CodeEmitter, ExecutionOrchestrator};
 
 type FileLockMap = HashMap<PathBuf, Arc<Mutex<Cell<String>>>>;
 
@@ -59,39 +61,50 @@ impl FilePool {
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
   pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
-    let mut file_defs = FileDefsBuf::new();
-    let mut is_new_pass_needed = true;
-    while is_new_pass_needed {
-      let executed_directives: Vec<&Directive> = self
-        .directives
-        .par_iter()
-        .filter(|directive| file_defs.can_execute_directive(directive))
-        .map(|directive| {
-          for suffix in directive.file_suffixes() {
-            let arc = self.file_lock(out, &suffix);
-            let cell = arc.lock().expect("mutex poisoning error");
-            let contents = cell.take();
-            let new_contents = match directive.insert.emit(contents, &directive.code) {
-              Ok(s) => s,
-              Err(s) => {
-                crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
+    // let mut file_defs = FileDefsBuf::new();
+    // let mut is_new_pass_needed = true;
 
-                s
-              }
-            };
+    let mut variables = HashSet::new();
+    let mut orchestrator = ExecutionOrchestrator::new(&self.directives, &variables);
 
-            cell.set(new_contents);
-          }
+    loop {
+      if orchestrator.finished {
+        if crate::VERBOSE {
+          verbose_debug("directive processing queue empty".to_owned());
+        }
 
-          directive
-        })
-        .collect();
-
-      for directive in executed_directives {
-        file_defs.mark_as_executed(directive);
+        break;
       }
 
-      is_new_pass_needed = file_defs.next_pass(super::file_defs_buf::FileDefsMode::OnlyNew);
+      orchestrator.to_run.par_iter().for_each(|directive| {
+        for suffix in directive.file_suffixes() {
+          let arc = self.file_lock(out, &suffix);
+          let cell = arc.lock().expect("mutex poisoning error");
+          let contents = cell.take();
+          let new_contents = match directive.insert.emit(contents, &directive.code) {
+            Ok(s) => s,
+            Err(s) => {
+              crate::cli::prints::build_no_location_found(out, directive.insert.parameters());
+
+              s
+            }
+          };
+
+          cell.set(new_contents);
+        }
+      });
+
+      for &dir in &orchestrator.to_run {
+        for define in dir.parameters().defines() {
+          if crate::VERBOSE {
+            verbose_debug(format!("define({define})"));
+          }
+
+          variables.insert(define);
+        }
+      }
+
+      orchestrator.next(&variables);
     }
 
     Ok(self)
