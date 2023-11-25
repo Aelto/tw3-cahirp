@@ -119,5 +119,5 @@ fn fits_requirements(directive: &Directive, defs: &HashSet<&str>) -> bool {
     .ifndefs()
     .all(|var| !defs.contains(var));
 
-  dbg!(all_ifdefs) && dbg!(all_ifndefs)
+  all_ifdefs && all_ifndefs
 }
