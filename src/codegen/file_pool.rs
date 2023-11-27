@@ -60,11 +60,13 @@ impl FilePool {
   /// Generate code and mutate the inner "in-memory" file locks with the results
   ///
   /// If persistence to disk is needed then refer to the [`persist()`] method
-  pub fn emit(self, out: &PathBuf) -> std::io::Result<Self> {
-    // let mut file_defs = FileDefsBuf::new();
-    // let mut is_new_pass_needed = true;
+  pub fn emit(self, out: &PathBuf, mod_names: &Vec<String>) -> std::io::Result<Self> {
+    // the initial variables are the names of all the mods that are installed,
+    // with a special prefix to clearly indicate these are the installed mods.
+    let initial_variables: Vec<String> =
+      mod_names.iter().map(|s| format!("installed.{s}")).collect();
 
-    let mut variables = HashSet::new();
+    let mut variables = HashSet::from_iter(initial_variables.iter().map(std::ops::Deref::deref));
     let mut orchestrator = ExecutionOrchestrator::new(&self.directives, &variables);
 
     loop {

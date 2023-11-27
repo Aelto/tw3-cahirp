@@ -9,7 +9,7 @@ use crate::parser::{Context, Directive, DirectiveId};
 mod watcher;
 pub use watcher::build_and_watch;
 
-use rayon::prelude::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub struct BuildOptions {
   pub clean_before_build: bool,
@@ -31,19 +31,33 @@ pub fn build(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CRes
 
 fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CResult<()> {
   use rayon::prelude::*;
-  let mut directives: Vec<Directive> = match options.recipes_dir.as_ref() {
-    // no mod override, scan the "mods" folder deduced from the game_root
-    None => list_mods(&game_root)
-      .into_par_iter()
-      // recipes are expected to be in a `cahirp` folder inside the mods
-      .flat_map(|module| parse_dir_recipes(module.path().join("cahirp")))
-      .collect(),
-    // an override is provided, scan only this folder for recipes
-    Some(dir) => vec![dir]
-      .into_par_iter()
-      .flat_map(|module| parse_dir_recipes(module.to_path_buf()))
-      .collect()
-  };
+  let (mut directives, mod_names): (Vec<Directive>, Vec<String>) =
+    match options.recipes_dir.as_ref() {
+      // no mod override, scan the "mods" folder deduced from the game_root
+      None => {
+        let mod_names = list_mods(&game_root)
+          .filter_map(|module| module.file_name().to_str().map(str::to_owned))
+          .collect();
+
+        let directives = list_mods(&game_root)
+          .par_bridge()
+          .into_par_iter()
+          // recipes are expected to be in a `cahirp` folder inside the mods
+          .flat_map(|module| parse_dir_recipes(module.path().join("cahirp")))
+          .collect();
+
+        (directives, mod_names)
+      }
+      // an override is provided, scan only this folder for recipes
+      Some(dir) => (
+        vec![dir]
+          .into_par_iter()
+          .flat_map(|module| parse_dir_recipes(module.to_path_buf()))
+          .collect(),
+        // with an override there is no installed mod since there is no mods folder
+        vec![]
+      )
+    };
 
   // assigns ids to the directives
   let mut index = 0;
@@ -54,20 +68,20 @@ fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CRes
 
   let file_pool = FilePool::new(directives, &game_root, &out)?;
 
-  file_pool.emit(&out)?.persist()?;
+  file_pool.emit(&out, &mod_names)?.persist()?;
 
   Ok(())
 }
 
 /// List the mods found in the mod directory while handling any eventual error
 /// in the process, yielding only the Ok results.
-fn list_mods(game_root: &PathBuf) -> impl rayon::iter::ParallelIterator<Item = DirEntry> {
+fn list_mods(game_root: &PathBuf) -> impl Iterator<Item = DirEntry> {
   let mods_folder = game_root.join("mods");
   let Ok(mods) = std::fs::read_dir(mods_folder) else {
     panic!("Could not read mods folder");
   };
 
-  mods.par_bridge().filter_map(|entry| match entry {
+  mods.filter_map(|entry| match entry {
     Ok(e) => Some(e),
     Err(e) => {
       println!("error reading mod: {e}");
