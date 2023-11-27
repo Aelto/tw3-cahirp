@@ -1,8 +1,11 @@
-use std::{path::PathBuf, sync::mpsc::Sender, time::Duration};
+use std::path::PathBuf;
+use std::sync::mpsc::Sender;
+use std::time::Duration;
 
 use notify_debouncer_full::DebounceEventHandler;
 
-use crate::{error::CResult, game::paths};
+use crate::error::CResult;
+use crate::game::paths;
 
 use super::BuildOptions;
 
@@ -46,7 +49,8 @@ impl DebounceEventHandler for WatchEmitter {
 }
 
 pub fn build_and_watch(game_root: PathBuf, out: PathBuf, options: &BuildOptions) -> CResult<()> {
-  use notify_debouncer_full::{new_debouncer, notify::*};
+  use notify_debouncer_full::new_debouncer;
+  use notify_debouncer_full::notify::*;
 
   let mods_folder = paths::mods_folder(&game_root);
 

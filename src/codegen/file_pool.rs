@@ -1,15 +1,15 @@
-use std::{
-  cell::Cell,
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::{Arc, Mutex}
-};
+use std::cell::Cell;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use rayon::prelude::*;
 
-use crate::{
-  cli::prints::verbose_debug, encoding::read_file, error::CResult, game::paths, parser::Directive
-};
+use crate::cli::prints::verbose_debug;
+use crate::encoding::read_file;
+use crate::error::CResult;
+use crate::game::paths;
+use crate::parser::Directive;
 
 use super::{CodeEmitter, ExecutionOrchestrator};
 

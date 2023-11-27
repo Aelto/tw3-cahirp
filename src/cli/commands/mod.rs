@@ -1,9 +1,7 @@
 use std::path::PathBuf;
 
 mod build;
-pub use build::build;
-pub use build::build_and_watch;
-pub use build::BuildOptions;
+pub use build::{build, build_and_watch, BuildOptions};
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Commands {

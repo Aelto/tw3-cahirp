@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use crate::{cli::prints::verbose_debug, parser::Directive};
+use crate::cli::prints::verbose_debug;
+use crate::parser::Directive;
 
 /// Orchestrates the execution of [Directive]s with the variables that are
 /// defined with [`Define`] and the requirements expressed by [`IfDef`] and

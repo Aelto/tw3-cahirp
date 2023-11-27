@@ -1,4 +1,5 @@
-use crate::{codegen::CodeEmitter, parser::Parameters};
+use crate::codegen::CodeEmitter;
+use crate::parser::Parameters;
 
 #[derive(Debug)]
 pub struct InsertDirective(Parameters);

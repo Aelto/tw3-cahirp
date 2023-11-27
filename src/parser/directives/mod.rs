@@ -1,4 +1,5 @@
-use std::{fmt::Display, path::PathBuf};
+use std::fmt::Display;
+use std::path::PathBuf;
 
 use crate::codegen::CodeEmitter;
 pub use crate::parser::prelude::*;
