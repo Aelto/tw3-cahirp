@@ -98,7 +98,7 @@ fn parse_dir_recipes<'a>(module: PathBuf) -> impl ParallelIterator<Item = Direct
         None
       }
     })
-    .flat_map(|directives| directives)
+    .flat_map_iter(|directives| directives)
 }
 
 fn read_dir_directive_files(folder: &PathBuf) -> CResult<Vec<String>> {
