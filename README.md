@@ -208,7 +208,7 @@ multiple lines and it continues until the next directive or the end of the file.
     - `ifdef(string)` (optional, multiple ifdefs is possible): provide a variable that must be defined for the directive to emit its code
     - `define(string)` (optional, multiple defines is possible): provide a variable to define after the directive has emitted its code. If the directive is blocked by `ifdef` requirements then it will wait until all of them are valid before defining its `define` instructions
     - `at(pattern)` places the cursor at the start of the pattern,
-above places it on line above right before the `\n`,
+    - `above(pattern)` places it on line above right before the `\n`,
     - `below(pattern)` places it on the line below right after the `\n`
     - `select(pattern)` places the cursor at the start of the pattern and removes
     anything that is outside the pattern. Successive `select(pattern)` can be used
