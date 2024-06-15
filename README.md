@@ -216,6 +216,8 @@ multiple lines and it continues until the next directive or the end of the file.
     where the first select must exist before going deeper into the second the select
     - `select[[multiline pattern]]` is like the normal select but on multiple lines,
     the indentation of the lines is ignored to make it easier/cleaner
+    - `export(pattern)`, marks the current insert directive as available to use in other directives through the `use(pattern)` parameter. Any exported directive is ignored during the code generation process, and its code is ignored. If multiple `export` parameters are found in a single directive, only the first one is used to identify it.
+    - `use(pattern)` tells to copy the parameters from the exported directive at the exact position of the parameter inside the current directive. If the imported directives themselves has `use` parameters as well then it will continue to append parameters until there is no more import found.
 - `@context` can be used to avoid repetitions in the `@insert` parameters by adding
 its own parameters to all the lower insert directives in the file. The context can
 grow by adding more context directives, the parameters of the second context are
