@@ -1,4 +1,6 @@
 #![feature(map_try_insert)]
+#![feature(extract_if)]
+#![feature(extend_one)]
 
 pub const VERBOSE: bool = cfg!(debug_assertions);
 

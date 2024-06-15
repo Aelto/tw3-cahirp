@@ -11,7 +11,7 @@ use crate::error::CResult;
 use crate::game::paths;
 use crate::parser::Directive;
 
-use super::{CodeEmitter, ExecutionOrchestrator};
+use super::{CodeEmitter, ExecutionOrchestrator, ExportDatabase};
 
 type FileLockMap = HashMap<PathBuf, Arc<Mutex<Cell<String>>>>;
 
@@ -20,6 +20,7 @@ type FileLockMap = HashMap<PathBuf, Arc<Mutex<Cell<String>>>>;
 /// amount of threads at it so the work is spread without fearing data races.
 pub struct FilePool {
   directives: Vec<Directive>,
+  export_db: ExportDatabase,
 
   /// The file locks is what  ensure only a single thread has access to the
   /// underlying Cell to mutate the content of the "in-memory file"
@@ -29,7 +30,9 @@ pub struct FilePool {
 impl FilePool {
   /// At creation the [FilePool] generates the exhaustive flat list of files that
   /// directives will work on.
-  pub fn new(directives: Vec<Directive>, game_root: &PathBuf, out: &PathBuf) -> CResult<Self> {
+  pub fn new(
+    directives: Vec<Directive>, export_db: ExportDatabase, game_root: &PathBuf, out: &PathBuf
+  ) -> CResult<Self> {
     let mut locks = HashMap::new();
     let mods = paths::mod_folders(game_root, out)?;
 
@@ -53,7 +56,8 @@ impl FilePool {
 
     Ok(Self {
       file_locks: locks,
-      directives
+      directives,
+      export_db
     })
   }
 
@@ -83,7 +87,10 @@ impl FilePool {
           let arc = self.file_lock(out, &suffix);
           let cell = arc.lock().expect("mutex poisoning error");
           let contents = cell.take();
-          let new_contents = match directive.insert.emit(contents, &directive.code) {
+          let new_contents = match directive
+            .insert
+            .emit(contents, &directive.code, &self.export_db)
+          {
             Ok(s) => s,
             Err(s) => {
               crate::cli::prints::build_no_location_found(out, directive.insert.parameters());

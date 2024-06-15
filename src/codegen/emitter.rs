@@ -1,13 +1,16 @@
 use crate::parser::Parameters;
 
-use super::CodeCursor;
+use super::{CodeCursor, ExportDatabase};
 
 pub trait CodeEmitter {
   fn parameters(&self) -> &Parameters;
+  fn parameters_mut(&mut self) -> &mut Parameters;
 
-  fn emit(&self, mut file: String, code: &str) -> Result<String, String> {
+  fn emit(
+    &self, mut file: String, code: &str, export_db: &ExportDatabase
+  ) -> Result<String, String> {
     let params = self.parameters();
-    let cursor = CodeCursor::from_parameters(params, &file);
+    let cursor = CodeCursor::from_parameters(params, export_db, &file);
 
     // the cursor itself has no notion of validity, here we check whether the
     // resulting position is out of bound which means no valid position was

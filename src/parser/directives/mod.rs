@@ -56,6 +56,10 @@ impl Directive {
   pub fn parameters(&self) -> &Parameters {
     self.insert.parameters()
   }
+
+  pub fn parameters_mut(&mut self) -> &mut Parameters {
+    self.insert.parameters_mut()
+  }
 }
 
 impl Display for Directive {
