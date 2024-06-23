@@ -24,7 +24,11 @@ pub enum Commands {
 
     /// Enables watch mode, rebuilds <OUT> on recipe changes and until a CTRL+C is received
     #[arg(short, long, action)]
-    watch: bool
+    watch: bool,
+
+    /// Disables the use of the installed mods for generating the merged files, everything will be based off the content0 files.
+    #[arg(long, action)]
+    without_mods: bool
   }
 }
 
@@ -35,7 +39,8 @@ impl Default for Commands {
       out: None,
       recipes: None,
       clean: true,
-      watch: false
+      watch: false,
+      without_mods: false
     }
   }
 }

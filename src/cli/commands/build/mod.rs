@@ -1,7 +1,7 @@
 use std::fs::DirEntry;
 use std::path::PathBuf;
 
-use crate::codegen::FilePool;
+use crate::codegen::{FilePool, FileSearchBehaviour};
 use crate::encoding::read_file;
 use crate::error::CResult;
 use crate::parser::{Context, Directive, DirectiveId};
@@ -13,6 +13,7 @@ use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
 pub struct BuildOptions {
   pub clean_before_build: bool,
+  pub without_mods: bool,
   pub recipes_dir: Option<PathBuf>
 }
 
@@ -66,7 +67,12 @@ fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CRes
     index += 1;
   }
 
-  let file_pool = FilePool::new(directives, &game_root, &out)?;
+  let search_behaviour = match options.without_mods {
+    true => FileSearchBehaviour::Content0,
+    false => FileSearchBehaviour::Content0AndMods
+  };
+
+  let file_pool = FilePool::new(directives, &game_root, &out, search_behaviour)?;
 
   file_pool.emit(&out, &mod_names)?.persist()?;
 

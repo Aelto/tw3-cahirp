@@ -29,7 +29,10 @@ pub struct FilePool {
 impl FilePool {
   /// At creation the [FilePool] generates the exhaustive flat list of files that
   /// directives will work on.
-  pub fn new(directives: Vec<Directive>, game_root: &PathBuf, out: &PathBuf) -> CResult<Self> {
+  pub fn new(
+    directives: Vec<Directive>, game_root: &PathBuf, out: &PathBuf,
+    search_behaviour: FileSearchBehaviour
+  ) -> CResult<Self> {
     let mut locks = HashMap::new();
     let mods = paths::mod_folders(game_root, out)?;
 
@@ -37,7 +40,8 @@ impl FilePool {
     for directive in &directives {
       let suffixes = directive.file_suffixes();
       for suffix in suffixes {
-        let search_result = Self::find_file(&locks, game_root, &out, &suffix, &mods);
+        let search_result =
+          Self::find_file(&locks, game_root, &out, &suffix, &mods, search_behaviour);
 
         match search_result {
           FileSearchResult::AlreadyInCache(_) => {}
@@ -139,7 +143,7 @@ impl FilePool {
 
   fn find_file(
     locks: &FileLockMap, game_root: &PathBuf, out: &PathBuf, file_suffix: &PathBuf,
-    mod_folders: &Vec<PathBuf>
+    mod_folders: &Vec<PathBuf>, search_behaviour: FileSearchBehaviour
   ) -> FileSearchResult {
     fn find_merge_file(game_root: &PathBuf, file_suffix: &PathBuf) -> Option<String> {
       read_file(&paths::merge_scripts(game_root).join(file_suffix)).ok()
@@ -168,12 +172,18 @@ impl FilePool {
     if locks.contains_key(&cahirp_file) {
       FileSearchResult::AlreadyInCache(cahirp_file)
     } else {
-      match read_file(&cahirp_file)
-        .ok()
-        .or_else(|| find_merge_file(game_root, file_suffix))
-        .or_else(|| find_mod_file(file_suffix, mod_folders))
-        .or_else(|| find_content_file(game_root, file_suffix))
-      {
+      let search = read_file(&cahirp_file).ok();
+
+      let search = match search_behaviour {
+        // if allowed, search for merge & mod files first
+        FileSearchBehaviour::Content0AndMods => search
+          .or_else(|| find_merge_file(game_root, file_suffix))
+          .or_else(|| find_mod_file(file_suffix, mod_folders)),
+        FileSearchBehaviour::Content0 => search
+      };
+
+      // finally look at the content0 files
+      match search.or_else(|| find_content_file(game_root, file_suffix)) {
         Some(s) => FileSearchResult::File((cahirp_file, s)),
         None => FileSearchResult::NotFound
       }
@@ -197,4 +207,10 @@ enum FileSearchResult {
   AlreadyInCache(PathBuf),
   File((PathBuf, String)),
   NotFound
+}
+
+#[derive(Clone, Copy)]
+pub enum FileSearchBehaviour {
+  Content0,
+  Content0AndMods
 }

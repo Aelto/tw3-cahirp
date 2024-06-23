@@ -25,7 +25,8 @@ impl Cli {
         out,
         recipes,
         clean,
-        watch
+        watch,
+        without_mods
       } => {
         // if using the default `out` folder it defaults to always cleaning
         // first
@@ -51,6 +52,7 @@ impl Cli {
 
         let options = commands::BuildOptions {
           clean_before_build,
+          without_mods,
           recipes_dir: recipes
         };
 

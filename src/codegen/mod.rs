@@ -5,7 +5,7 @@ mod cursor;
 pub use cursor::CodeCursor;
 
 mod file_pool;
-pub use file_pool::FilePool;
+pub use file_pool::{FilePool, FileSearchBehaviour};
 
 mod orchestrator;
 pub use orchestrator::ExecutionOrchestrator;
