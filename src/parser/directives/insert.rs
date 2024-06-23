@@ -21,4 +21,8 @@ impl CodeEmitter for InsertDirective {
   fn parameters(&self) -> &Parameters {
     &self.0
   }
+
+  fn parameters_mut(&mut self) -> &mut Parameters {
+    &mut self.0
+  }
 }

@@ -1,3 +1,26 @@
+
+@insert(
+  export("CR4Player")
+  file(game/player/r4Player.ws)
+  at(class CR4Player)
+)
+
+@insert(
+  export("lock function")
+  use("CR4Player")
+  note("nested use test")
+  at(function CheckLockTargetIsAlive)
+)
+
+@insert(
+  note("make all targets always alive")
+  use("lock function")
+  below(target = (CActor)GetDisplayTarget())
+)
+// modSomething - BEGIN
+return true;
+// modSomething - END
+
 @insert(
   note("makes that repair kits repair 100% of the item's durability")
   define("fullrepair_0")

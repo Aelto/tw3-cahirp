@@ -1,7 +1,7 @@
 use std::fs::DirEntry;
 use std::path::PathBuf;
 
-use crate::codegen::{FilePool, FileSearchBehaviour};
+use crate::codegen::{ExportDatabase, FilePool, FileSearchBehaviour};
 use crate::encoding::read_file;
 use crate::error::CResult;
 use crate::parser::{Context, Directive, DirectiveId};
@@ -67,12 +67,15 @@ fn scan_mods(game_root: &PathBuf, out: &PathBuf, options: &BuildOptions) -> CRes
     index += 1;
   }
 
+  let export_db = ExportDatabase::collect_named_exports(&mut directives);
+  export_db.feed_exports(&mut directives);
+
   let search_behaviour = match options.without_mods {
     true => FileSearchBehaviour::Content0,
     false => FileSearchBehaviour::Content0AndMods
   };
 
-  let file_pool = FilePool::new(directives, &game_root, &out, search_behaviour)?;
+  let file_pool = FilePool::new(directives, export_db, &game_root, &out, search_behaviour)?;
 
   file_pool.emit(&out, &mod_names)?.persist()?;
 

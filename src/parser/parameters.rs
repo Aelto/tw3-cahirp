@@ -1,9 +1,43 @@
 use std::ops::Deref;
 
+use crate::codegen::ExportDatabase;
 pub use crate::parser::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Parameters(Vec<Parameter>);
+
+impl Parameters {
+  pub fn feed_exports(&mut self, export_db: &ExportDatabase) {
+    let mut max = self.0.len();
+    let mut i = 0;
+
+    while i < max {
+      let param = &self.0[i];
+
+      if let Parameter::Use(key) = param {
+        if let Some(params) = export_db.get(&key) {
+          let new_params = params.parameters().clone().into_inner();
+
+          let extension = new_params.len();
+          self.0.extend_reserve(extension);
+          max += extension;
+
+          let mut inner_i = i + 1;
+          for new_param in new_params {
+            self.0.insert(inner_i, new_param);
+            inner_i += 1;
+          }
+        }
+      }
+
+      i += 1;
+    }
+  }
+
+  pub fn into_inner(self) -> Vec<Parameter> {
+    self.0
+  }
+}
 
 impl Parameters {
   pub fn empty() -> Self {
@@ -82,6 +116,13 @@ impl Parameters {
     })
   }
 
+  pub fn exports_first(&self) -> Option<&str> {
+    self.0.iter().find_map(|p| match p {
+      Parameter::Export(s) => Some(s.deref()),
+      _ => None
+    })
+  }
+
   pub fn has_ifndefs(&self) -> bool {
     self.0.iter().any(|p| match p {
       Parameter::IfNotDef(_) => true,
@@ -93,6 +134,13 @@ impl Parameters {
     self.0.iter().any(|p| match p {
       Parameter::IfNotDef(_) => true,
       Parameter::IfDef(_) => true,
+      _ => false
+    })
+  }
+
+  pub fn has_export(&self) -> bool {
+    self.0.iter().any(|p| match p {
+      Parameter::Export(_) => true,
       _ => false
     })
   }
@@ -169,7 +217,12 @@ pub enum Parameter {
   ///
   /// _It has the side-effect of delaying the code emitting by 1 pass to allow
   /// variables to be defined before it is even tested._
-  IfNotDef(String)
+  IfNotDef(String),
+
+  Export(String),
+
+  Use(String),
+  UseConstructed(Parameters)
 }
 
 impl Parameter {
@@ -185,7 +238,9 @@ impl Parameter {
       Self::parse_note,
       Self::parse_ifdef,
       Self::parse_ifndef,
-      Self::parse_define
+      Self::parse_define,
+      Self::parse_export,
+      Self::parse_use
     ))(i)?;
     let (i, _) = trim(i)?;
 
@@ -241,6 +296,18 @@ impl Parameter {
     let (i, pattern) = Self::parse_parameter("ifdef", i)?;
 
     Ok((i, Self::IfDef(pattern)))
+  }
+
+  fn parse_export(i: &str) -> IResult<&str, Self> {
+    let (i, pattern) = Self::parse_parameter("export", i)?;
+
+    Ok((i, Self::Export(pattern)))
+  }
+
+  fn parse_use(i: &str) -> IResult<&str, Self> {
+    let (i, pattern) = Self::parse_parameter("use", i)?;
+
+    Ok((i, Self::Use(pattern)))
   }
 
   fn parse_ifndef(i: &str) -> IResult<&str, Self> {
